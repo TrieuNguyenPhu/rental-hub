@@ -132,6 +132,8 @@ PLAYWRIGHT_CHANNEL=chromium npm run test:e2e
 
 ## Tài liệu tham khảo
 
+Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
+
 - [Vite](https://vite.dev/guide/)
 - [Zustand persist](https://zustand.docs.pmnd.rs/reference/integrations/persisting-store-data)
 - [React Router](https://reactrouter.com/start/declarative/installation)
