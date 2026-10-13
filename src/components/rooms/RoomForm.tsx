@@ -14,7 +14,7 @@ export function RoomForm({ room, buildings, onClose, onSave }: { room?: Room; bu
     <label>Số phòng *<input name="roomNumber" defaultValue={room?.roomNumber} placeholder="Ví dụ: 101" required /></label>
     <label>Tầng *<input aria-label="Tầng *" aria-describedby="room-floor-hint" name="floor" type="number" min="1" max={building?.floors} step="1" defaultValue={room?.floor ?? ''} required /><span id="room-floor-hint" className="field-hint">{building ? `Tòa nhà có ${building.floors} tầng.` : 'Chọn tòa nhà để xem số tầng.'}</span></label>
     <label>Diện tích (m²) *<input name="area" type="number" min="0.01" step="any" defaultValue={room?.area ?? ''} required /></label>
-    <label>Giá thuê / tháng (VND) *<input name="rentalPrice" type="number" min="1" step="any" defaultValue={room?.rentalPrice ?? ''} required /></label>
-    <label className="full-width">Trạng thái *<select aria-label="Trạng thái *" name="status" defaultValue={room?.status ?? 'available'}><option value="available">Khả dụng</option><option value="maintenance">Bảo trì</option></select></label>
+    <label>Giá thuê / tháng (VND) *<input name="rentalPrice" type="number" min="0" step="1" defaultValue={room?.rentalPrice ?? ''} required /></label>
+    <label className="full-width">Trạng thái *<select aria-label="Trạng thái *" name="status" defaultValue={room?.status ?? 'available'}><option value="available">Khả dụng</option><option value="occupied">Đang sử dụng</option><option value="maintenance">Bảo trì</option></select></label>
   </FormPanel>
 }

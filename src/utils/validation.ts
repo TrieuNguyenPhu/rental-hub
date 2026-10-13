@@ -15,8 +15,8 @@ export function validateRoom(input: RoomInput, data: EstateData, id?: string): s
   if (data.rooms.some(room => room.id !== id && room.buildingId === input.buildingId && room.roomNumber.toLocaleLowerCase('vi') === input.roomNumber.trim().toLocaleLowerCase('vi'))) return 'Số phòng đã tồn tại trong tòa nhà này.'
   if (!Number.isInteger(input.floor) || input.floor <= 0 || input.floor > building.floors) return `Tầng phải là số nguyên từ 1 đến ${building.floors}.`
   if (!Number.isFinite(input.area) || input.area <= 0) return 'Diện tích phải lớn hơn 0.'
-  if (!Number.isFinite(input.rentalPrice) || input.rentalPrice <= 0) return 'Giá thuê phải lớn hơn 0.'
-  if (!['available', 'maintenance'].includes(input.status)) return 'Trạng thái phòng không hợp lệ.'
+  if (!Number.isSafeInteger(input.rentalPrice) || input.rentalPrice < 0) return 'Giá thuê phải là số nguyên VND không âm.'
+  if (!['available', 'occupied', 'maintenance'].includes(input.status)) return 'Trạng thái phòng không hợp lệ.'
 }
 
 export function validDate(value: string): boolean {

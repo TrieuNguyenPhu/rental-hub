@@ -76,8 +76,10 @@ test('building can be marked inactive without deleting rooms or bookings', () =>
 })
 test('room CRUD maintains references and rejects duplicates, invalid floors, area and prices', () => {
   const store = fixture()
-  for (const patch of [{ buildingId: 'missing' }, { roomNumber: ' ' }, { roomNumber: '101' }, { floor: 0 }, { floor: 9 }, { floor: 1.2 }, { area: 0 }, { area: NaN }, { rentalPrice: -1 }, { rentalPrice: Infinity }]) {
+  const before = store.getState().rooms
+  for (const patch of [{ buildingId: 'missing' }, { roomNumber: ' ' }, { roomNumber: '101' }, { floor: 0 }, { floor: 9 }, { floor: 1.2 }, { area: 0 }, { area: NaN }, { area: Infinity }, { rentalPrice: -1 }, { rentalPrice: 1.5 }, { rentalPrice: Infinity }]) {
     assert.equal(store.getState().addRoom({ ...roomInput, ...patch }).ok, false)
+    assert.deepEqual(store.getState().rooms, before)
   }
   assert.equal(store.getState().addRoom({ ...roomInput, roomNumber: ' TEST ' }).ok, true)
   const room = store.getState().rooms.at(-1)!
@@ -86,6 +88,11 @@ test('room CRUD maintains references and rejects duplicates, invalid floors, are
   assert.equal(store.getState().updateRoom(room.id, { ...roomInput, buildingId: 'building-2' }).ok, true)
   assert.equal(store.getState().rooms.at(-1)!.id, room.id)
   assert.equal(store.getState().deleteRoom(room.id).ok, true)
+})
+
+test('rooms accept zero whole VND and manual occupied status', () => {
+  const store = fixture()
+  assert.equal(store.getState().addRoom({ ...roomInput, rentalPrice: 0, status: 'occupied' }).ok, true)
 })
 test('rooms with confirmed or cancelled bookings cannot be deleted', () => {
   const store = fixture()

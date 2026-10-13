@@ -29,7 +29,7 @@ export interface Room {
   floor: number
   area: number
   rentalPrice: number
-  status: 'available' | 'maintenance'
+  status: 'available' | 'occupied' | 'maintenance'
   images: ImageAsset[]
 }
 
