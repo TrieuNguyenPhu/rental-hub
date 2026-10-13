@@ -25,6 +25,7 @@ export function validTarget(target: ImageTarget): boolean {
 export async function processImage(input: Buffer, declaredType: string, target: ImageTarget, imagesRoot: string, tempRoot: string): Promise<ImageAsset> {
   if (!validTarget(target)) throw new MediaError(400, 'INVALID_TARGET', 'Invalid entity type or ID.')
   if (input.length > MAX_IMAGE_BYTES) throw new MediaError(413, 'TOO_LARGE', 'Image must be at most 10 MiB.')
+  if (!input.length) throw new MediaError(422, 'INVALID_IMAGE', 'Image is empty.')
   const formats: Record<string, string> = { 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/webp': 'webp' }
   if (!Object.hasOwn(formats, declaredType)) throw new MediaError(415, 'UNSUPPORTED_TYPE', 'Use JPEG, PNG or WebP.')
   const image = sharp(input, { limitInputPixels: 20_000_000, failOn: 'warning' })
@@ -33,7 +34,20 @@ export async function processImage(input: Buffer, declaredType: string, target: 
   if (metadata.format !== formats[declaredType]) throw new MediaError(415, 'TYPE_MISMATCH', 'Content does not match the declared image type.')
   const rotated = (metadata.orientation ?? 1) >= 5 && (metadata.orientation ?? 1) <= 8
   const width = rotated ? metadata.height : metadata.width
+  const height = rotated ? metadata.width : metadata.height
   if ((metadata.pages ?? 1) !== 1 || !width || width < 1200 || !metadata.height || !metadata.width || metadata.width * metadata.height > 20_000_000) throw new MediaError(422, 'IMAGE_LIMIT', 'Use a static image at least 1200px wide and at most 20 megapixels.')
+  if (Math.round(height! * 1200 / width) > 16383) throw new MediaError(422, 'IMAGE_LIMIT', 'The 1200px WebP output must be no taller than 16383px.')
+  // libpng decodes APNG's first frame without reporting its frame count.
+  if (metadata.format === 'png') {
+    for (let offset = 8; offset + 12 <= input.length;) {
+      const length = input.readUInt32BE(offset)
+      if (length > input.length - offset - 12) throw new MediaError(422, 'INVALID_IMAGE', 'Invalid PNG chunks.')
+      const type = input.toString('ascii', offset + 4, offset + 8)
+      if (type === 'acTL' && length >= 4 && input.readUInt32BE(offset + 8) > 1) throw new MediaError(422, 'IMAGE_LIMIT', 'Use a static PNG image.')
+      offset += length + 12
+      if (type === 'IEND') break
+    }
+  }
   const id = randomUUID()
   const base = `${Math.floor(Date.now() / 1000)}-${randomUUID()}`
   const relative = `${target.entityType}-image/${target.entityId}/${id}`

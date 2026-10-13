@@ -34,9 +34,24 @@ test('images.producesPairedWebp', async t => {
 
 test('images.rejectsFakeAndUnsupported and MIME mismatch', async t => {
   const { images, temp } = await roots(t)
-  for (const [buffer, mime, status] of [[Buffer.from('fake jpeg'), 'image/jpeg', 422], [Buffer.from('<svg/>'), 'image/svg+xml', 415], [Buffer.from('GIF89a'), 'image/gif', 415], [await source(), 'image/png', 415]] as const) {
+  for (const [buffer, mime, status] of [[Buffer.alloc(0), 'image/jpeg', 422], [Buffer.from('fake jpeg'), 'image/jpeg', 422], [Buffer.from('<svg/>'), 'image/svg+xml', 415], [Buffer.from('GIF89a'), 'image/gif', 415], [await source(), 'image/png', 415]] as const) {
     await assert.rejects(processImage(buffer, mime, target, images, temp), { status })
   }
+  assert.deepEqual(await fs.readdir(images), [])
+})
+
+test('images rejects APNG even when the decoder reports no frame count', async t => {
+  const { images, temp } = await roots(t)
+  // Two distinct 1600x10 frames with valid PNG/APNG chunks and CRCs.
+  const animated = Buffer.from('iVBORw0KGgoAAAANSUhEUgAABkAAAAAKCAIAAABjfQXAAAAACGFjVEwAAAACAAAAAPONk3AAAAAaZmNUTAAAAAAAAAZAAAAACgAAAAAAAAAAAAEACgAAmkJniwAAAGFJREFUeJztzjENwEAQBLHjT/rDYNtJYckAfO8OAAAAAH6rHwAAAADA0A8AAAAAYOgHAAAAADD0AwAAAAAY+gEAAAAADP0AAAAAAIZ+AAAAAABDPwAAAACAoR8AAAAAwPABCdFFI7DgfpAAAAAaZmNUTAAAAAEAAAZAAAAACgAAAAAAAAAAAAEACgAAATGNXwAAAGVmZEFUAAAAAnic7c5BDYAAEASx828aFLDf4dGkAnp3DwAAAAD8WD8AAAAAgKEfAAAAAMDQDwAAAABg6AcAAAAAMPQDAAAAABj6AQAAAAAM/QAAAAAAhn4AAAAAAEM/AAAAAIBPL39+RSNSbI8oAAAAAElFTkSuQmCC', 'base64')
+  await assert.rejects(processImage(animated, 'image/png', target, images, temp), { status: 422, code: 'IMAGE_LIMIT' })
+  assert.deepEqual(await fs.readdir(images), [])
+})
+
+test('images explains when the required output exceeds the WebP height limit', async t => {
+  const { images, temp } = await roots(t)
+  const tall = await sharp({ create: { width: 1200, height: 16666, channels: 3, background: '#aaa' } }).png().toBuffer()
+  await assert.rejects(processImage(tall, 'image/png', target, images, temp), { status: 422, code: 'IMAGE_LIMIT' })
   assert.deepEqual(await fs.readdir(images), [])
 })
 

@@ -1,9 +1,10 @@
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import fs from 'node:fs/promises'
-import { unlinkSync } from 'node:fs'
+import { createServer as createLockServer } from 'node:net'
+import type { Server as LockServer } from 'node:net'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { MAX_IMAGE_BYTES, MediaError, processImage, validTarget } from './images.ts'
 import type { ImageTarget } from './images.ts'
@@ -64,20 +65,21 @@ export async function startMediaServer(config: MediaConfig): Promise<Server> {
   const imagesStat = await fs.stat(imagesRoot), tempStat = await fs.stat(tempRoot)
   if (!imagesStat.isDirectory() || !tempStat.isDirectory() || imagesStat.dev !== tempStat.dev) throw new Error('Storage directories must share a filesystem')
   const development = process.env.NODE_ENV === 'development'
-  const lock = path.join(tempRoot, '.media.lock')
-  let ownsLock = false
-  const releaseLock = () => { if (ownsLock) { unlinkSync(lock); ownsLock = false } }
+  let lock: LockServer | undefined
+  let busy = false
+  let serverClosed = false
+  const releaseLock = () => { if (lock?.listening) lock.close() }
   try {
     if (!config.readOnly) {
-      try {
-        const existing = JSON.parse(await fs.readFile(lock, 'utf8'))
-        if (existing.owner !== 'rental-hub-media' || !Number.isInteger(existing.pid) || existing.pid <= 0) throw new Error('Invalid media lock')
-        try { process.kill(existing.pid, 0); throw new Error('Media service already running') }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error }
-        await fs.unlink(lock)
-      } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
-      await fs.writeFile(lock, JSON.stringify({ owner: 'rental-hub-media', pid: process.pid }), { flag: 'wx', mode: 0o600 })
-      ownsLock = true
+      if (!['linux', 'win32'].includes(process.platform)) throw new Error('Media locking requires Linux or Windows')
+      const key = createHash('sha256').update(tempRoot).digest('hex')
+      const address = process.platform === 'win32' ? `\\\\.\\pipe\\rental-hub-media-${key}` : `\0rental-hub-media-${key}`
+      // OS ownership avoids stale PID-file races and disappears on process exit.
+      lock = createLockServer(socket => socket.destroy())
+      await new Promise<void>((resolve, reject) => {
+        lock!.once('error', () => reject(new Error('Media service already running or lock unavailable')))
+        lock!.listen(address, () => { lock!.removeAllListeners('error'); resolve() })
+      })
       for (const entry of await fs.readdir(tempRoot, { withFileTypes: true })) {
         if (!entry.isDirectory() || !/^upload-[A-Za-z0-9]{6}$/.test(entry.name)) continue
         const directory = path.join(tempRoot, entry.name)
@@ -85,7 +87,6 @@ export async function startMediaServer(config: MediaConfig): Promise<Server> {
         if (owner === 'rental-hub-image-upload') await fs.rm(directory, { recursive: true })
       }
     }
-    let busy = false
     const server = createServer(async (req, res) => {
       req.on('error', () => {})
       res.on('finish', () => console.info(`${req.method} ${res.statusCode} ${config.releaseId}`))
@@ -123,11 +124,11 @@ export async function startMediaServer(config: MediaConfig): Promise<Server> {
         const failure = error instanceof MediaError ? error : (error as NodeJS.ErrnoException).code === 'ENOSPC'
           ? new MediaError(507, 'DISK_FULL', 'Image storage is full.') : new MediaError(500, 'INTERNAL_ERROR', 'Image service failed.')
         if (!res.destroyed && !res.headersSent) json(res, failure.status, { code: failure.code, message: failure.message })
-      } finally { if (uploadSlot) busy = false }
+      } finally { if (uploadSlot) { busy = false; if (serverClosed) releaseLock() } }
     })
     server.requestTimeout = 35_000
     server.headersTimeout = 10_000
-    server.on('close', releaseLock)
+    server.on('close', () => { serverClosed = true; if (!busy) releaseLock() })
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(config.port, '127.0.0.1', () => { server.off('error', reject); resolve() }) })
     return server
   } catch (error) { releaseLock(); throw error }

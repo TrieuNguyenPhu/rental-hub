@@ -15,11 +15,11 @@ export function BookingsPage() {
   const [editing, setEditing] = useState<Booking | 'new' | null>(null)
   const [cancelling, setCancelling] = useState<Booking | null>(null)
   const [message, setMessage] = useState('')
-  const canBook = rooms.some(room => room.status === 'available')
+  const canBook = rooms.some(room => room.status !== 'maintenance' && buildings.find(item => item.id === room.buildingId)?.status === 'active')
   const filtered = bookings.filter(booking => (!status || booking.status === status) && `${booking.customerName} ${booking.customerPhone}`.toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi'))).sort((a, b) => b.checkIn.localeCompare(a.checkIn))
   return <>
     <PageHeading title="Lịch đặt phòng" subtitle="Quản lý khách hàng, thời gian lưu trú và lịch sử đặt phòng." addLabel="Thêm lịch đặt" onAdd={() => setEditing('new')} disabled={!canBook} />
-    {!canBook && <div className="notice info">Cần có ít nhất một phòng khả dụng để tạo lịch đặt mới.</div>}
+    {!canBook && <div className="notice info">Cần có phòng không bảo trì trong tòa nhà đang hoạt động để tạo lịch đặt mới.</div>}
     <SuccessNotice message={message} />
     <section className="panel">
       <div className="table-toolbar"><SearchInput value={query} onChange={setQuery} placeholder="Tìm khách hàng hoặc số điện thoại..." /><select aria-label="Lọc theo trạng thái booking" value={status} onChange={event => setStatus(event.target.value)}><option value="">Tất cả trạng thái</option><option value="confirmed">Đã xác nhận</option><option value="cancelled">Đã hủy</option></select><span className="result-count">{filtered.length} lịch đặt</span></div>

@@ -126,7 +126,7 @@ test('api startup cleans only owned stale upload directories after obtaining its
     for (const name of ['upload-ABC123', 'upload-DEF456', 'unrelated']) await fs.mkdir(path.join(config.tempRoot, name))
     await fs.writeFile(path.join(config.tempRoot, 'upload-ABC123', '.owner'), 'rental-hub-image-upload')
   })
-  assert.deepEqual((await fs.readdir(config.tempRoot)).sort(), ['.media.lock', 'unrelated', 'upload-DEF456'])
+  assert.deepEqual((await fs.readdir(config.tempRoot)).sort(), ['unrelated', 'upload-DEF456'])
 })
 
 test('api health reports unavailable writes and startup rejects different filesystems', async t => {
@@ -178,4 +178,72 @@ test('api config fails before listening and writable instances cannot share temp
   await assert.rejects(startMediaServer({ ...config, imagesRoot: 'relative' }), /absolute/)
   await assert.rejects(startMediaServer({ ...config, siteOrigin: '*' }), /origin/)
   await assert.rejects(startMediaServer({ ...config, imagesRoot: config.tempRoot }), /separate/)
+})
+
+test('api concurrent stale startup admits only one writable owner', { timeout: 5000 }, async t => {
+  const root = await fs.mkdtemp(path.join(tmpdir(), 'rental-lock-test-'))
+  const config: MediaConfig = { host: '127.0.0.1', port: 0, imagesRoot: path.join(root, 'images'), tempRoot: path.join(root, 'tmp'), siteOrigin: origin, releaseId: 'lock-test', readOnly: false }
+  await fs.mkdir(config.imagesRoot); await fs.mkdir(config.tempRoot)
+  await fs.writeFile(path.join(config.tempRoot, '.media.lock'), JSON.stringify({ owner: 'rental-hub-media', pid: 2147483647 }))
+  const unlink = fs.unlink, write = fs.writeFile, read = fs.readFile
+  let bothRead!: () => void
+  const oldLockRead = new Promise<void>(resolve => { bothRead = resolve })
+  let reads = 0
+  t.mock.method(fs, 'readFile', async (...args: Parameters<typeof fs.readFile>) => {
+    const result = await read(...args)
+    if (String(args[0]).endsWith('.media.lock')) { if (++reads === 2) bothRead(); await oldLockRead }
+    return result
+  })
+  let release!: () => void
+  const acquired = new Promise<void>(resolve => { release = resolve })
+  let unlinks = 0
+  t.mock.method(fs, 'unlink', async (...args: Parameters<typeof fs.unlink>) => {
+    if (String(args[0]).endsWith('.media.lock') && ++unlinks === 2) await acquired
+    return unlink(...args)
+  })
+  t.mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
+    const result = await write(...args)
+    if (String(args[0]).endsWith('.media.lock')) release()
+    return result
+  })
+  const results = await Promise.allSettled([startMediaServer(config), startMediaServer(config)])
+  t.after(async () => {
+    t.mock.restoreAll()
+    for (const result of results) if (result.status === 'fulfilled') {
+      await fs.writeFile(path.join(config.tempRoot, '.media.lock'), '{}')
+      await new Promise<void>(resolve => result.value.close(() => resolve()))
+    }
+    await fs.rm(root, { recursive: true, force: true })
+  })
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
+})
+
+test('api closing disconnected HTTP requests keeps ownership until publication settles', async t => {
+  const { url, server, config } = await fixture(t)
+  const write = fs.writeFile
+  let release!: () => void, entered!: () => void, published!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  const writing = new Promise<void>(resolve => { entered = resolve })
+  const finished = new Promise<void>(resolve => { published = resolve })
+  t.mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
+    if (String(args[0]).endsWith('_600.webp')) { entered(); await gate }
+    const result = await write(...args)
+    return result
+  })
+  const rename = fs.rename
+  t.mock.method(fs, 'rename', async (...args: Parameters<typeof fs.rename>) => { const result = await rename(...args); published(); return result })
+  const client = streaming(url)
+  const clientDone = client.response.catch(() => {})
+  client.req.end(await jpeg())
+  await writing
+  server.closeAllConnections()
+  await new Promise<void>(resolve => server.close(() => resolve()))
+  let replacement: Awaited<ReturnType<typeof startMediaServer>> | undefined
+  try {
+    await assert.rejects(async () => { replacement = await startMediaServer(config) }, /already running/)
+  } finally {
+    release()
+    if (replacement) await new Promise<void>(resolve => replacement!.close(() => resolve()))
+  }
+  await finished; await clientDone
 })

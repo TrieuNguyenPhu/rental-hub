@@ -12,7 +12,7 @@ export function validateRoom(input: RoomInput, data: EstateData, id?: string): s
   const building = data.buildings.find(item => item.id === input.buildingId)
   if (!building) return 'Vui lòng chọn một tòa nhà tồn tại.'
   if (!input.roomNumber.trim()) return 'Vui lòng nhập số phòng.'
-  if (data.rooms.some(room => room.id !== id && room.buildingId === input.buildingId && room.roomNumber.toLocaleLowerCase('vi') === input.roomNumber.trim().toLocaleLowerCase('vi'))) return 'Số phòng đã tồn tại trong tòa nhà này.'
+  if (data.rooms.some(room => room.id !== id && room.buildingId === input.buildingId && room.roomNumber.trim().toLocaleLowerCase('vi') === input.roomNumber.trim().toLocaleLowerCase('vi'))) return 'Số phòng đã tồn tại trong tòa nhà này.'
   if (!Number.isInteger(input.floor) || input.floor <= 0 || input.floor > building.floors) return `Tầng phải là số nguyên từ 1 đến ${building.floors}.`
   if (!Number.isFinite(input.area) || input.area <= 0) return 'Diện tích phải lớn hơn 0.'
   if (!Number.isSafeInteger(input.rentalPrice) || input.rentalPrice < 0) return 'Giá thuê phải là số nguyên VND không âm.'
@@ -59,10 +59,10 @@ export function readEstateData(value: unknown): EstateData {
     if (!collection.every(item => strings(item, ['id']) && /^[A-Za-z0-9_-]{1,64}$/.test(item.id)) || new Set(collection.map(item => item.id)).size !== collection.length) throw new Error('Invalid IDs')
   }
   for (const building of data.buildings) {
-    if (!strings(building, ['name', 'address', 'city', 'status']) || validateBuilding(building, { ...data, rooms: [] }) || !validImages(building.images ?? [])) throw new Error('Invalid building')
+    if (!strings(building, ['name', 'address', 'city', 'status']) || validateBuilding(building, { ...data, rooms: [] }) || !validImages(building.images === undefined ? [] : building.images)) throw new Error('Invalid building')
   }
   for (const room of data.rooms) {
-    if (!strings(room, ['buildingId', 'roomNumber', 'status']) || validateRoom(room, data, room.id) || !validImages(room.images ?? [])) throw new Error('Invalid room')
+    if (!strings(room, ['buildingId', 'roomNumber', 'status']) || validateRoom(room, data, room.id) || !validImages(room.images === undefined ? [] : room.images)) throw new Error('Invalid room')
   }
   for (const booking of data.bookings) {
     if (!strings(booking, ['roomId', 'customerName', 'customerPhone', 'checkIn', 'checkOut', 'status']) || !booking.customerName.trim() || !booking.customerPhone.trim() || !data.rooms.some(room => room.id === booking.roomId) || !['confirmed', 'cancelled'].includes(booking.status) || !validDate(booking.checkIn) || !validDate(booking.checkOut) || booking.checkOut <= booking.checkIn || (booking.status === 'confirmed' && hasBookingOverlap(data.bookings, booking.roomId, booking.checkIn, booking.checkOut, booking.id))) throw new Error('Invalid booking')

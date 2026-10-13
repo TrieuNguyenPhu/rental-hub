@@ -132,6 +132,9 @@ test('booking overlap and edit self-exclusion are enforced by store actions', ()
   assert.equal(store.getState().addBooking({ ...bookingInput, checkIn: '2027-02-15', checkOut: '2027-02-25' }).ok, false)
   assert.equal(store.getState().updateBooking(booking.id, { ...bookingInput, customerName: 'Edited Guest' }).ok, true)
   assert.equal(store.getState().addBooking({ ...bookingInput, checkIn: '2027-02-20', checkOut: '2027-02-25' }).ok, true)
+  const before = store.getState().bookings
+  assert.equal(store.getState().updateBooking(booking.id, { ...bookingInput, checkOut: '2027-02-24' }).ok, false)
+  assert.deepEqual(store.getState().bookings, before)
   assert.equal(store.getState().bookings.find(item => item.id === booking.id)!.customerName, 'Edited Guest')
 })
 test('moving a booking checks the target room for overlaps and maintenance', () => {
@@ -202,4 +205,22 @@ test('legacy data gets image defaults without changing the stored original on hy
   assert.deepEqual(store.getState().buildings[0].images, [])
   assert.deepEqual(store.getState().rooms[0].images, [])
   assert.equal(values.get('room-finder-estate-v1'), raw)
+})
+
+test('hydrate rejects explicitly null image lists and preserves the raw original', () => {
+  const { storage, values } = memoryStorage()
+  const seed = createDemoData()
+  const raw = JSON.stringify({ version: 1, state: { ...seed, buildings: seed.buildings.map(item => ({ ...item, images: null })) } })
+  values.set('room-finder-estate-v1', raw)
+  const store = createEstateStore(storage)
+  assert.ok(store.getState().storageWarning)
+  assert.equal(values.get('room-finder-estate-v1'), raw)
+})
+
+test('legacy room numbers with surrounding spaces still block normalized duplicates', () => {
+  const { storage } = memoryStorage()
+  const store = createEstateStore(storage)
+  store.setState({ rooms: store.getState().rooms.map(item => item.id === 'room-1' ? { ...item, roomNumber: ' TEST ' } : item) })
+  const reloaded = createEstateStore(storage)
+  assert.equal(reloaded.getState().addRoom({ ...roomInput, roomNumber: 'test' }).ok, false)
 })

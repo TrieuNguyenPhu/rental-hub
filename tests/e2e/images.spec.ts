@@ -118,3 +118,28 @@ test('images metadata warns on quota and broken previews have a fallback', async
   await page.getByRole('button', { name: 'Sửa QA Tower', exact: true }).click()
   await expect(page.getByText('Không tải được ảnh.')).toBeVisible()
 })
+
+test('closing a pending upload cancels it before it can restore a removed image', async ({ page }) => {
+  await createBuilding(page)
+  await page.getByRole('button', { name: 'Sửa QA Tower', exact: true }).click()
+  const file = await image()
+  await page.getByLabel('Chọn ảnh').setInputFiles(file)
+  await expect(page.getByRole('img', { name: /^Ảnh tòa nhà/ })).toHaveCount(1)
+  const [old] = await storedImages(page, 'buildings', 'QA Tower')
+  const newId = 'late-image'
+  const late = { ...old, id: newId, url600: old.url600.replace(old.id, newId), url1200: old.url1200.replace(old.id, newId) }
+  let release!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/api/images?**', async route => { await gate; await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(late) }).catch(() => {}) })
+  await page.getByLabel('Chọn ảnh').setInputFiles(file)
+  await expect(page.getByLabel('Chọn ảnh')).toBeDisabled()
+  const cancelled = page.waitForEvent('requestfailed', { predicate: request => request.url().includes('/api/images?'), timeout: 5000 })
+  try {
+    await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: 'Sửa QA Tower', exact: true }).click()
+    await page.getByRole('button', { name: 'Bỏ ảnh 1', exact: true }).click()
+    await cancelled
+  } finally { release() }
+  await expect(page.getByRole('img', { name: /^Ảnh tòa nhà/ })).toHaveCount(0)
+  expect(await storedImages(page, 'buildings', 'QA Tower')).toEqual([])
+})
