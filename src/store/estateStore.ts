@@ -29,11 +29,11 @@ const browserStorage: StateStorage = {
 
 export function createEstateStore(storage: StateStorage = browserStorage) {
   const store = create<EstateStore>()(persist((set, get) => {
-    const commit = (patch: Partial<EstateData>): ActionResult => {
+    const commit = (patch: Partial<EstateData>, id: string): ActionResult => {
       const previous = get()
       try {
         set(patch)
-        return { ok: true }
+        return { ok: true, id }
       } catch {
         // Restore memory too, so a failed storage write cannot look successful.
         try { set(previous) } catch { /* Storage is still unavailable; memory has been restored. */ }
@@ -45,39 +45,42 @@ export function createEstateStore(storage: StateStorage = browserStorage) {
       addBuilding: input => {
         const error = validateBuilding(input, get())
         if (error) return failure(error)
-        return commit({ buildings: [...get().buildings, { ...input, name: input.name.trim(), address: input.address.trim(), city: input.city.trim(), id: crypto.randomUUID() }] })
+        const id = crypto.randomUUID()
+        return commit({ buildings: [...get().buildings, { ...input, images: input.images ?? [], name: input.name.trim(), address: input.address.trim(), city: input.city.trim(), id }] }, id)
       },
       updateBuilding: (id, input) => {
         if (!get().buildings.some(item => item.id === id)) return failure('Tòa nhà không còn tồn tại.')
         const error = validateBuilding(input, get(), id)
         if (error) return failure(error)
-        return commit({ buildings: get().buildings.map(item => item.id === id ? { ...input, name: input.name.trim(), address: input.address.trim(), city: input.city.trim(), id } : item) })
+        return commit({ buildings: get().buildings.map(item => item.id === id ? { ...input, images: input.images ?? item.images, name: input.name.trim(), address: input.address.trim(), city: input.city.trim(), id } : item) }, id)
       },
       deleteBuilding: id => {
         if (!get().buildings.some(item => item.id === id)) return failure('Tòa nhà không còn tồn tại.')
         if (get().rooms.some(room => room.buildingId === id)) return failure('Không thể xóa tòa nhà đang có phòng liên kết. Hãy xử lý các phòng trước.')
-        return commit({ buildings: get().buildings.filter(item => item.id !== id) })
+        return commit({ buildings: get().buildings.filter(item => item.id !== id) }, id)
       },
       addRoom: input => {
         const error = validateRoom(input, get())
         if (error) return failure(error)
-        return commit({ rooms: [...get().rooms, { ...input, roomNumber: input.roomNumber.trim(), id: crypto.randomUUID() }] })
+        const id = crypto.randomUUID()
+        return commit({ rooms: [...get().rooms, { ...input, images: input.images ?? [], roomNumber: input.roomNumber.trim(), id }] }, id)
       },
       updateRoom: (id, input) => {
         if (!get().rooms.some(item => item.id === id)) return failure('Phòng không còn tồn tại.')
         const error = validateRoom(input, get(), id)
         if (error) return failure(error)
-        return commit({ rooms: get().rooms.map(item => item.id === id ? { ...input, roomNumber: input.roomNumber.trim(), id } : item) })
+        return commit({ rooms: get().rooms.map(item => item.id === id ? { ...input, images: input.images ?? item.images, roomNumber: input.roomNumber.trim(), id } : item) }, id)
       },
       deleteRoom: id => {
         if (!get().rooms.some(item => item.id === id)) return failure('Phòng không còn tồn tại.')
         if (get().bookings.some(booking => booking.roomId === id)) return failure('Không thể xóa phòng có booking liên kết, kể cả booking đã hủy, để giữ nguyên lịch sử.')
-        return commit({ rooms: get().rooms.filter(item => item.id !== id) })
+        return commit({ rooms: get().rooms.filter(item => item.id !== id) }, id)
       },
       addBooking: input => {
         const error = validateBooking(input, get())
         if (error) return failure(error)
-        return commit({ bookings: [...get().bookings, { ...input, customerName: input.customerName.trim(), customerPhone: input.customerPhone.trim(), status: 'confirmed', id: crypto.randomUUID() }] })
+        const id = crypto.randomUUID()
+        return commit({ bookings: [...get().bookings, { ...input, customerName: input.customerName.trim(), customerPhone: input.customerPhone.trim(), status: 'confirmed', id }] }, id)
       },
       updateBooking: (id, input) => {
         const booking = get().bookings.find(item => item.id === id)
@@ -85,15 +88,15 @@ export function createEstateStore(storage: StateStorage = browserStorage) {
         if (booking.status === 'cancelled') return failure('Booking đã hủy không thể chỉnh sửa hoặc kích hoạt lại.')
         const error = validateBooking(input, get(), id)
         if (error) return failure(error)
-        return commit({ bookings: get().bookings.map(item => item.id === id ? { ...input, customerName: input.customerName.trim(), customerPhone: input.customerPhone.trim(), status: 'confirmed', id } : item) })
+        return commit({ bookings: get().bookings.map(item => item.id === id ? { ...input, customerName: input.customerName.trim(), customerPhone: input.customerPhone.trim(), status: 'confirmed', id } : item) }, id)
       },
       cancelBooking: id => {
         const booking = get().bookings.find(item => item.id === id)
         if (!booking) return failure('Booking không còn tồn tại.')
         if (booking.status === 'cancelled') return failure('Booking này đã được hủy.')
-        return commit({ bookings: get().bookings.map(item => item.id === id ? { ...item, status: 'cancelled' } : item) })
+        return commit({ bookings: get().bookings.map(item => item.id === id ? { ...item, status: 'cancelled' } : item) }, id)
       },
-      resetDemoData: () => commit(createDemoData()),
+      resetDemoData: () => commit(createDemoData(), 'demo'),
     }
   }, {
     name: 'room-finder-estate-v1',

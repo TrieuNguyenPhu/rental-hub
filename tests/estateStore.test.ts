@@ -26,6 +26,18 @@ test('first visit immediately saves the seed; reload restores the same data', ()
   assert.equal(values.size, 1)
   assert.deepEqual(createEstateStore(storage).getState().bookings, first.getState().bookings)
 })
+
+test('estateStore.initializesAndPersistsMetadata returns stable IDs and image defaults', () => {
+  const { storage, values } = memoryStorage()
+  const store = createEstateStore(storage)
+  const result = store.getState().addBuilding(buildingInput)
+  assert.ok(result.ok)
+  assert.equal(typeof result.id, 'string')
+  const reloaded = createEstateStore(storage).getState()
+  assert.deepEqual(reloaded.buildings.find(item => item.id === result.id)?.images, [])
+  assert.ok(reloaded.rooms.every(item => Array.isArray(item.images)))
+  assert.doesNotMatch([...values.values()][0], /base64|Blob/)
+})
 test('demo has 3 buildings, 12 rooms, 7 bookings with valid references and no overlaps', () => {
   const data = createDemoData()
   assert.equal(data.buildings.length, 3); assert.equal(data.rooms.length, 12); assert.equal(data.bookings.length, 7)
