@@ -189,3 +189,48 @@ test('responsive layout has no page overflow and mobile navigation works', async
     }
   }
 })
+
+test('corrupt storage offers an exact raw export before a confirmed reset', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('room-finder-estate-v1', '{bad'))
+  await page.reload()
+  await expect(page.getByRole('alert')).toContainText('Dữ liệu gốc')
+  await expect(page.locator('.stat-value')).toHaveText(['0', '0', '0', '0'])
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Xuất dữ liệu', exact: true }).click()
+  const download = await downloadPromise
+  const stream = await download.createReadStream()
+  const parts = []
+  for await (const chunk of stream!) parts.push(chunk)
+  expect(Buffer.concat(parts).toString()).toBe('{bad')
+  await page.getByRole('button', { name: 'Khôi phục dữ liệu demo', exact: true }).click()
+  await page.keyboard.press('Escape')
+  expect(await page.evaluate(() => localStorage.getItem('room-finder-estate-v1'))).toBe('{bad')
+  await page.getByRole('button', { name: 'Khôi phục dữ liệu demo', exact: true }).click()
+  await page.getByRole('button', { name: 'Khôi phục demo', exact: true }).click()
+  await page.reload()
+  await expect(page.locator('.stat-value')).toHaveText(['3', '12', '7', '5'])
+})
+
+test('quota warning reacts to writes, keeps memory and suppresses saved notices', async ({ page }) => {
+  await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError') } })
+  await page.reload()
+  await createBuilding(page)
+  await expect(page.getByRole('alert')).toContainText('sẽ mất khi tải lại')
+  await expect(page.getByRole('status')).not.toBeVisible()
+  await expect(page.getByText('QA Tower', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('QA Tower', { exact: true })).not.toBeVisible()
+})
+
+test('confirm dialog traps Tab and Escape keeps the building', async ({ page }) => {
+  await createBuilding(page)
+  const deleteButton = page.getByRole('button', { name: 'Xóa QA Tower', exact: true })
+  await deleteButton.click()
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab')
+    expect(await page.getByRole('dialog').evaluate(dialog => dialog.contains(document.activeElement))).toBe(true)
+  }
+  await page.keyboard.press('Escape')
+  await expect(deleteButton).toBeFocused()
+  await expect(page.getByText('QA Tower', { exact: true })).toBeVisible()
+})

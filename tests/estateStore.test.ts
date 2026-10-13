@@ -166,11 +166,40 @@ test('writes persist, including empty collections which must never be reseeded',
   const reloaded = createEstateStore(storage).getState()
   assert.deepEqual([reloaded.buildings, reloaded.rooms, reloaded.bookings], [[], [], []])
 })
-test('storage write failure returns an error and rolls back in-memory state', () => {
+test('storage write failure keeps memory and warns that reload will lose the change', () => {
   const storage: StateStorage = { getItem: () => null, setItem: () => { throw new Error('quota exceeded') }, removeItem: () => {} }
   const store = createEstateStore(storage)
   const before = store.getState().buildings
   const result = store.getState().addBuilding(buildingInput)
-  assert.equal(result.ok, false)
-  assert.deepEqual(store.getState().buildings, before)
+  assert.equal(result.ok, true)
+  assert.equal(store.getState().buildings.length, before.length + 1)
+  assert.ok(store.getState().storageWarning)
+})
+
+test('corrupt and malformed storage stays intact until exported and explicitly reset', () => {
+  for (const raw of ['{bad', JSON.stringify({ state: { buildings: 'bad', rooms: [], bookings: [] }, version: 0 }), JSON.stringify({ state: { buildings: [{ id: 'b', name: 42 }], rooms: [], bookings: [] }, version: 1 })]) {
+    const { storage, values } = memoryStorage()
+    values.set('room-finder-estate-v1', raw)
+    const store = createEstateStore(storage)
+    assert.ok(store.getState().storageWarning)
+    assert.deepEqual(store.getState().buildings, [])
+    store.getState().addBuilding(buildingInput)
+    assert.equal(values.get('room-finder-estate-v1'), raw)
+    assert.equal(store.getState().resetDemoData().ok, false)
+    assert.equal(store.getState().exportData(), raw)
+    assert.equal(store.getState().resetDemoData().ok, true)
+    assert.equal(createEstateStore(storage).getState().buildings.length, 3)
+  }
+})
+
+test('legacy data gets image defaults without changing the stored original on hydrate', () => {
+  const { storage, values } = memoryStorage()
+  const seed = createDemoData()
+  const state = { ...seed, buildings: seed.buildings.map(({ images: _images, ...item }) => item), rooms: seed.rooms.map(({ images: _images, ...item }) => item) }
+  const raw = JSON.stringify({ state, version: 0 })
+  values.set('room-finder-estate-v1', raw)
+  const store = createEstateStore(storage)
+  assert.deepEqual(store.getState().buildings[0].images, [])
+  assert.deepEqual(store.getState().rooms[0].images, [])
+  assert.equal(values.get('room-finder-estate-v1'), raw)
 })
