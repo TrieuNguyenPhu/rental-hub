@@ -13,7 +13,7 @@ export function DashboardPage() {
   const stats = [
     { label: 'Tổng tòa nhà', value: buildings.length, detail: `${buildings.filter(building => building.status === 'active').length} đang hoạt động`, icon: Building2, color: 'blue', to: '/buildings' },
     { label: 'Tổng số phòng', value: rooms.length, detail: `Thuộc ${buildings.length} tòa nhà`, icon: DoorOpen, color: 'violet', to: '/rooms' },
-    { label: 'Phòng khả dụng', value: available, detail: `${rooms.length - available} phòng đang bảo trì`, icon: CircleCheck, color: 'green', to: '/rooms' },
+    { label: 'Phòng khả dụng', value: available, detail: `${rooms.filter(room => room.status === 'maintenance').length} phòng đang bảo trì`, icon: CircleCheck, color: 'green', to: '/rooms' },
     { label: 'Lịch đặt còn hiệu lực', value: current.length, detail: 'Đã xác nhận và chưa trả phòng', icon: CalendarCheck2, color: 'orange', to: '/bookings' },
   ]
   return <>

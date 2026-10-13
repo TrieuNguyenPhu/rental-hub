@@ -7,7 +7,7 @@ export function BookingForm({ booking, rooms, buildings, onClose, onSave }: { bo
     roomId: formText(data, 'roomId'), customerName: formText(data, 'customerName'), customerPhone: formText(data, 'customerPhone'),
     checkIn: formText(data, 'checkIn'), checkOut: formText(data, 'checkOut'),
   })}>
-    <label className="full-width">Phòng *<select aria-label="Phòng *" name="roomId" defaultValue={booking?.roomId ?? ''} required><option value="">Chọn phòng</option>{rooms.map(room => <option key={room.id} value={room.id} disabled={room.status === 'maintenance' && room.id !== booking?.roomId}>{buildings.find(item => item.id === room.buildingId)?.name} · Phòng {room.roomNumber}{room.status === 'maintenance' ? ' (Bảo trì)' : ''}</option>)}</select></label>
+    <label className="full-width">Phòng *<select aria-label="Phòng *" name="roomId" defaultValue={booking?.roomId ?? ''} required><option value="">Chọn phòng</option>{rooms.map(room => <option key={room.id} value={room.id} disabled={room.status === 'maintenance' || buildings.find(item => item.id === room.buildingId)?.status !== 'active'}>{buildings.find(item => item.id === room.buildingId)?.name} · Phòng {room.roomNumber}{room.status === 'maintenance' ? ' (Bảo trì)' : ''}</option>)}</select></label>
     <label>Tên khách hàng *<input name="customerName" defaultValue={booking?.customerName} placeholder="Họ và tên" required /></label>
     <label>Số điện thoại *<input name="customerPhone" type="tel" defaultValue={booking?.customerPhone} placeholder="090 123 4567" required /></label>
     <label>Ngày nhận phòng *<input name="checkIn" type="date" defaultValue={booking?.checkIn} required /></label>

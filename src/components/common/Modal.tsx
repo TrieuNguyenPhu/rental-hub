@@ -14,7 +14,14 @@ export function Modal({ title, children, onClose }: { title: string; children: R
       if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus()
     }
   }, [])
-  return <dialog ref={ref} className="modal" aria-labelledby="modal-title" onCancel={event => { event.preventDefault(); onClose() }} onClick={event => { if (event.target === event.currentTarget) onClose() }}>
+  return <dialog ref={ref} className="modal" aria-labelledby="modal-title" onKeyDown={event => {
+    if (event.key !== 'Tab') return
+    const controls = event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]')
+    const first = controls[0]
+    const last = controls[controls.length - 1]
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+  }} onCancel={event => { event.preventDefault(); onClose() }} onClick={event => { if (event.target === event.currentTarget) onClose() }}>
     <div className="modal-header"><h2 id="modal-title">{title}</h2><button type="button" className="icon-button" aria-label="Đóng hộp thoại" onClick={onClose}><X size={20} /></button></div>
     {children}
   </dialog>

@@ -34,3 +34,6 @@ playwright-report/
 *.tfstate.*
 *.tfplan
 infra/aws/*.local.*
+server-dist/
+.media/
+!.env.example

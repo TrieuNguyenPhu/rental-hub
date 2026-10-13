@@ -8,15 +8,19 @@
     "build": "npm run typecheck && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts server/*.test.ts",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:media": "tsc -p server/tsconfig.json",
+    "start:media": "node server-dist/server/main.js",
+    "dev:media": "node --env-file-if-exists=.env --experimental-strip-types server/main.ts"
   },
   "dependencies": {
     "lucide-react": "^1.55.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
+    "sharp": "^0.35.5",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

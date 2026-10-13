@@ -1,32 +1,12 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { createBuilding, createRoom } from './helpers'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
   await page.waitForLoadState('networkidle')
 })
 
-async function createBuilding(page: Page) {
-  await page.goto('/buildings')
-  await page.getByRole('button', { name: 'Thêm tòa nhà', exact: true }).click()
-  await page.getByLabel('Tên tòa nhà *').fill('QA Tower')
-  await page.getByLabel('Địa chỉ *').fill('12 Nguyễn Trãi')
-  await page.getByLabel('Thành phố *').fill('Huế')
-  await page.getByLabel('Số tầng *').fill('5')
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click()
-  await expect(page.getByRole('dialog')).not.toBeVisible()
-}
-async function createRoom(page: Page) {
-  await page.goto('/rooms')
-  await page.getByRole('button', { name: 'Thêm phòng', exact: true }).click()
-  await page.getByLabel('Tòa nhà *', { exact: true }).selectOption({ label: 'QA Tower · Huế' })
-  await page.getByLabel('Số phòng *').fill('QA-101')
-  await page.getByLabel('Tầng *', { exact: true }).fill('1')
-  await page.getByLabel('Diện tích (m²) *').fill('35')
-  await page.getByLabel('Giá thuê / tháng (VND) *').fill('5000000')
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click()
-  await expect(page.getByRole('dialog')).not.toBeVisible()
-}
 async function bookingForm(page: Page, name: string, start: string, end: string) {
   await page.getByRole('button', { name: 'Thêm lịch đặt', exact: true }).click()
   await page.getByLabel('Phòng *', { exact: true }).selectOption({ label: 'QA Tower · Phòng QA-101' })
@@ -67,14 +47,14 @@ test('building create, validation, edit, search, delete confirmation and persist
   await expect(page.getByText('QA Tower', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Sửa QA Tower', exact: true }).click()
   await expect(page.getByLabel('Tên tòa nhà *')).toHaveValue('QA Tower')
-  await page.getByLabel('Tên tòa nhà *').fill('QA Tower Edited')
+  await page.getByLabel('Tên tòa nhà *').fill('Tòa A')
   await page.getByRole('button', { name: 'Lưu thay đổi' }).click()
-  await page.getByRole('searchbox').fill('qa tower edited')
+  await page.getByRole('searchbox').fill('  TÒA A  ')
   await expect(page.locator('tbody tr')).toHaveCount(1)
-  await page.getByRole('button', { name: 'Xóa QA Tower Edited', exact: true }).click()
+  await page.getByRole('button', { name: 'Xóa Tòa A', exact: true }).click()
   await page.getByRole('button', { name: 'Quay lại' }).click()
-  await expect(page.getByText('QA Tower Edited', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Xóa QA Tower Edited', exact: true }).click()
+  await expect(page.getByText('Tòa A', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Xóa Tòa A', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Xóa', exact: true }).click()
   await expect(page.getByText('Không có dữ liệu', { exact: true })).toBeVisible()
   await page.getByRole('searchbox').fill('')
@@ -188,4 +168,67 @@ test('responsive layout has no page overflow and mobile navigation works', async
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tòa nhà')
     }
   }
+})
+
+test('corrupt storage offers an exact raw export before a confirmed reset', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('room-finder-estate-v1', '{bad'))
+  await page.reload()
+  await expect(page.getByRole('alert')).toContainText('Dữ liệu gốc')
+  await expect(page.locator('.stat-value')).toHaveText(['0', '0', '0', '0'])
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Xuất dữ liệu', exact: true }).click()
+  const download = await downloadPromise
+  const stream = await download.createReadStream()
+  const parts = []
+  for await (const chunk of stream!) parts.push(chunk)
+  expect(Buffer.concat(parts).toString()).toBe('{bad')
+  await page.getByRole('button', { name: 'Khôi phục dữ liệu demo', exact: true }).click()
+  await page.keyboard.press('Escape')
+  expect(await page.evaluate(() => localStorage.getItem('room-finder-estate-v1'))).toBe('{bad')
+  await page.getByRole('button', { name: 'Khôi phục dữ liệu demo', exact: true }).click()
+  await page.getByRole('button', { name: 'Khôi phục demo', exact: true }).click()
+  await page.reload()
+  await expect(page.locator('.stat-value')).toHaveText(['3', '12', '7', '5'])
+})
+
+test('quota warning reacts to writes, keeps memory and suppresses saved notices', async ({ page }) => {
+  await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError') } })
+  await page.reload()
+  await createBuilding(page)
+  await expect(page.getByRole('alert')).toContainText('sẽ mất khi tải lại')
+  await expect(page.getByRole('status')).not.toBeVisible()
+  await expect(page.getByText('QA Tower', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('QA Tower', { exact: true })).not.toBeVisible()
+})
+
+test('confirm dialog traps Tab and Escape keeps the building', async ({ page }) => {
+  await createBuilding(page)
+  const deleteButton = page.getByRole('button', { name: 'Xóa QA Tower', exact: true })
+  await deleteButton.click()
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab')
+    expect(await page.getByRole('dialog').evaluate(dialog => dialog.contains(document.activeElement))).toBe(true)
+  }
+  await page.keyboard.press('Escape')
+  await expect(deleteButton).toBeFocused()
+  await expect(page.getByText('QA Tower', { exact: true })).toBeVisible()
+})
+
+test('occupied rooms in active buildings can receive a booking for free dates', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('room-finder-estate-v1', JSON.stringify({ version: 1, state: {
+    buildings: [{ id: 'b1', name: 'Active Tower', address: 'Test street', city: 'Huế', floors: 1, status: 'active', images: [] }],
+    rooms: [{ id: 'r1', buildingId: 'b1', roomNumber: '101', floor: 1, area: 30, rentalPrice: 0, status: 'occupied', images: [] }], bookings: [],
+  } })))
+  await page.goto('/bookings')
+  await expect(page.getByRole('button', { name: 'Thêm lịch đặt', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Thêm lịch đặt', exact: true }).click()
+  await page.getByLabel('Phòng *', { exact: true }).selectOption('r1')
+  await page.getByLabel('Tên khách hàng *').fill('Future Guest')
+  await page.getByLabel('Số điện thoại *').fill('123')
+  await page.getByLabel('Ngày nhận phòng *').fill('2028-02-29')
+  await page.getByLabel('Ngày trả phòng *').fill('2028-03-01')
+  await page.getByRole('button', { name: 'Lưu thay đổi' }).click()
+  await expect(page.getByRole('dialog')).not.toBeVisible()
+  await expect(page.getByText('Future Guest', { exact: true })).toBeVisible()
 })

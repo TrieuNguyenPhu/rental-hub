@@ -20,7 +20,7 @@ export function BuildingsPage() {
     <section className="panel">
       <div className="table-toolbar"><SearchInput value={query} onChange={setQuery} placeholder="Tìm theo tên tòa nhà..." /><span className="result-count">{filtered.length} / {buildings.length} tòa nhà</span></div>
       {filtered.length ? <div className="table-scroll"><table><thead><tr><th>Tòa nhà</th><th>Thành phố</th><th>Số tầng</th><th>Phòng</th><th>Trạng thái</th><th className="align-right">Thao tác</th></tr></thead><tbody>{filtered.map(building => <tr key={building.id}>
-        <td><div className="entity-cell"><span className="entity-icon"><Building2 size={20} /></span><div><strong>{building.name}</strong><span className="cell-subtitle">{building.address}</span></div></div></td>
+        <td><div className="entity-cell"><span className="entity-icon"><Building2 size={20} />{building.images[0] && <img src={building.images[0].url600} alt={`Ảnh ${building.name}`} onError={event => { event.currentTarget.hidden = true }} />}</span><div><strong>{building.name}</strong><span className="cell-subtitle">{building.address}</span></div></div></td>
         <td>{building.city}</td><td>{building.floors} tầng</td><td>{rooms.filter(room => room.buildingId === building.id).length} phòng</td><td><Badge status={building.status} /></td>
         <td><RowActions name={building.name} onEdit={() => setEditing(building)} onDelete={() => setDeleting(building)} /></td>
       </tr>)}</tbody></table></div> : <EmptyState>{query ? 'Không tìm thấy tòa nhà phù hợp. Hãy thử tên khác.' : 'Thêm tòa nhà đầu tiên để bắt đầu quản lý phòng.'}</EmptyState>}

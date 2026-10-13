@@ -3,13 +3,13 @@ import { dateOffset } from '../utils/format.ts'
 
 export function createDemoData(): EstateData {
   const buildings: EstateData['buildings'] = [
-    { id: 'building-1', name: 'Riverside Residence', address: '28 Nguyễn Hữu Cảnh, Bình Thạnh', city: 'TP. Hồ Chí Minh', floors: 8, status: 'active' },
-    { id: 'building-2', name: 'Lotus Garden', address: '86 Trần Duy Hưng, Cầu Giấy', city: 'Hà Nội', floors: 6, status: 'active' },
-    { id: 'building-3', name: 'Ocean View', address: '12 Võ Nguyên Giáp, Sơn Trà', city: 'Đà Nẵng', floors: 5, status: 'maintenance' },
+    { id: 'building-1', name: 'Riverside Residence', address: '28 Nguyễn Hữu Cảnh, Bình Thạnh', city: 'TP. Hồ Chí Minh', floors: 8, status: 'active', images: [] },
+    { id: 'building-2', name: 'Lotus Garden', address: '86 Trần Duy Hưng, Cầu Giấy', city: 'Hà Nội', floors: 6, status: 'active', images: [] },
+    { id: 'building-3', name: 'Ocean View', address: '12 Võ Nguyên Giáp, Sơn Trà', city: 'Đà Nẵng', floors: 5, status: 'maintenance', images: [] },
   ]
   const rooms: EstateData['rooms'] = buildings.flatMap((building, bi) => [1, 2, 3, 4].map((floor, ri) => ({
     id: `room-${bi * 4 + ri + 1}`, buildingId: building.id, roomNumber: `${floor}01`, floor,
-    area: [32, 45, 56, 68][ri], rentalPrice: 4_500_000 + bi * 500_000 + ri * 1_500_000,
+    area: [32, 45, 56, 68][ri], rentalPrice: 4_500_000 + bi * 500_000 + ri * 1_500_000, images: [],
     status: bi === 2 || (bi === 0 && ri === 3) ? 'maintenance' : 'available',
   })))
   const names = ['Nguyễn Minh Anh', 'Trần Hoàng Nam', 'Lê Thu Hà', 'Phạm Quang Huy', 'Võ Ngọc Linh', 'Đặng Tuấn Anh', 'Bùi Thanh Mai']
