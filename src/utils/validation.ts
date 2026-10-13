@@ -4,7 +4,7 @@ import { hasBookingOverlap } from './bookingOverlap.ts'
 export function validateBuilding(input: BuildingInput, data: EstateData, id?: string): string | undefined {
   if (!input.name.trim() || !input.address.trim() || !input.city.trim()) return 'Vui lòng nhập tên, địa chỉ và thành phố của tòa nhà.'
   if (!Number.isInteger(input.floors) || input.floors <= 0) return 'Số tầng phải là số nguyên dương.'
-  if (!['active', 'maintenance'].includes(input.status)) return 'Trạng thái tòa nhà không hợp lệ.'
+  if (!['active', 'inactive', 'maintenance'].includes(input.status)) return 'Trạng thái tòa nhà không hợp lệ.'
   if (id && data.rooms.some(room => room.buildingId === id && room.floor > input.floors)) return 'Không thể giảm số tầng xuống thấp hơn tầng của phòng hiện có.'
 }
 

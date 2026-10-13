@@ -9,8 +9,8 @@ export default defineConfig({
   use: { baseURL, headless: true, screenshot: 'only-on-failure', trace: 'retain-on-failure' },
   projects: [{ name: 'chrome', use: { browserName: 'chromium', channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome' } }],
   webServer: remoteBaseURL ? undefined : {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
+    command: 'npm run preview -- --host 127.0.0.1 --port 5173 --strictPort',
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
 })

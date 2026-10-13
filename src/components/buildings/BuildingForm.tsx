@@ -11,6 +11,6 @@ export function BuildingForm({ building, onClose, onSave }: { building?: Buildin
     <label className="full-width">Địa chỉ *<input name="address" defaultValue={building?.address} placeholder="Số nhà, đường, quận/huyện" required /></label>
     <label>Thành phố *<input name="city" defaultValue={building?.city} placeholder="TP. Hồ Chí Minh" required /></label>
     <label>Số tầng *<input name="floors" type="number" min="1" step="1" defaultValue={building?.floors ?? ''} required /></label>
-    <label className="full-width">Trạng thái *<select aria-label="Trạng thái *" name="status" defaultValue={building?.status ?? 'active'}><option value="active">Đang hoạt động</option><option value="maintenance">Bảo trì</option></select></label>
+    <label className="full-width">Trạng thái *<select aria-label="Trạng thái *" name="status" defaultValue={building?.status ?? 'active'}><option value="active">Đang hoạt động</option><option value="inactive">Ngừng hoạt động</option><option value="maintenance">Bảo trì</option></select></label>
   </FormPanel>
 }

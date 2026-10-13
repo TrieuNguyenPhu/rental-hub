@@ -60,9 +60,19 @@ test('building CRUD trims values, preserves ID and blocks deletion with linked r
 })
 test('building actions reject empty strings, fractional and nonpositive floors', () => {
   const store = fixture()
-  for (const patch of [{ name: ' ' }, { address: '' }, { city: '' }, { floors: 0 }, { floors: -1 }, { floors: 1.5 }, { floors: NaN }]) {
+  const before = store.getState().buildings
+  for (const patch of [{ name: ' ' }, { address: ' ' }, { city: ' ' }, { floors: 0 }, { floors: -1 }, { floors: 1.5 }, { floors: NaN }, { floors: Infinity }]) {
     assert.equal(store.getState().addBuilding({ ...buildingInput, ...patch }).ok, false)
+    assert.deepEqual(store.getState().buildings, before)
   }
+})
+
+test('building can be marked inactive without deleting rooms or bookings', () => {
+  const store = fixture()
+  const before = store.getState()
+  assert.equal(store.getState().updateBuilding('building-1', { ...buildingInput, floors: 8, status: 'inactive' }).ok, true)
+  assert.deepEqual(store.getState().rooms, before.rooms)
+  assert.deepEqual(store.getState().bookings, before.bookings)
 })
 test('room CRUD maintains references and rejects duplicates, invalid floors, area and prices', () => {
   const store = fixture()

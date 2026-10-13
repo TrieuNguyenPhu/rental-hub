@@ -69,7 +69,7 @@ test('building create, validation, edit, search, delete confirmation and persist
   await expect(page.getByLabel('Tên tòa nhà *')).toHaveValue('QA Tower')
   await page.getByLabel('Tên tòa nhà *').fill('QA Tower Edited')
   await page.getByRole('button', { name: 'Lưu thay đổi' }).click()
-  await page.getByRole('searchbox').fill('qa tower edited')
+  await page.getByRole('searchbox').fill('  QA TOWER EDITED  ')
   await expect(page.locator('tbody tr')).toHaveCount(1)
   await page.getByRole('button', { name: 'Xóa QA Tower Edited', exact: true }).click()
   await page.getByRole('button', { name: 'Quay lại' }).click()

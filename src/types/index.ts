@@ -18,7 +18,7 @@ export interface Building {
   address: string
   city: string
   floors: number
-  status: 'active' | 'maintenance'
+  status: 'active' | 'inactive' | 'maintenance'
   images: ImageAsset[]
 }
 
