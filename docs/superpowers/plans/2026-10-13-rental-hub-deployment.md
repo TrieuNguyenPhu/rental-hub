@@ -66,7 +66,7 @@
 
 **Files:** `deploy/systemd/rental-hub-media.service`, nginx template, `deploy/env/media.env.example`, VPS runbook/acceptance.
 
-**Interfaces:** Consumes server-dist, main env contract Media I.2; produces service/routing/auth/cert và evidence ảnh VPS. Unit `ExecStart` Node chạy `/srv/rental-hub/current/server-dist/main.js`; user media, EnvironmentFile `/etc/rental-hub/media.env`, NODE_ENV=production, Restart on-failure; exact Node binary đã ghi ở 2.1.
+**Interfaces:** Consumes server-dist, main env contract Media I.2; produces service/routing/auth/cert và evidence ảnh VPS. Unit `ExecStart` Node chạy `/srv/rental-hub/current/server-dist/server/main.js`; user media, EnvironmentFile `/etc/rental-hub/media.env`, NODE_ENV=production, Restart on-failure; exact Node binary đã ghi ở 2.1.
 
 - [ ] **Step 1 — Test checklist:** unit active; `curl http://127.0.0.1:3001/api/health` releaseId đúng; external3001 không kết nối; upload chưa auth401; Origin sai403; upload đúng201; ảnh hai widths đọc được. Không gửi Basic credential bằng curlHTTP Internet.
 - [ ] **Step 2 — Configure service:** env đúng roots/siteOrigin/releaseId; unit bootstrap enable/start; media chỉ ghi shared images/tmp. `systemctl status rental-hub-media`, `journalctl -u rental-hub-media -n 50` không có secret.

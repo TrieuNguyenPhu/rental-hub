@@ -81,3 +81,4 @@
 ## Execution mapping (2026-10-13, App + Images)
 Execution of App/Images is authorized by the user's executing-plans request. Deployment/Operations are not part of this execution.
 Existing equivalents retained: `src/store/estateStore.ts` also exports the hook; `src/utils/validation.ts` contains all validators/date helper; `src/utils/bookingOverlap.ts` contains overlap; `src/data/demo.ts` contains the seed; `src/components/common/PageParts.tsx` contains common page parts. Existing `roomNumber`/`rentalPrice` names and building `maintenance` status remain compatible. Unit tests use `node:test` in `tests/`, browser tests use `tests/e2e/`; no Vitest dependency is needed.
+Media execution mapping: build:media emits server-dist/server/main.js (rootDir includes shared src/types); start:media and the future Deployment ExecStart contract use that actual path. App/Images steps are complete; Deployment/Operations have not been executed.

@@ -1,4 +1,4 @@
-﻿# EstateFlow — Real Estate Management MVP
+# EstateFlow — Real Estate Management MVP
 
 Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt. Upload ảnh dùng API Node/Sharp riêng, không có database hoặc login sản phẩm. Font được lưu trong `public/fonts/`.
 
@@ -144,10 +144,12 @@ Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và ro
 
 Copy `.env.example` sang `.env`, chạy `npm run dev:media` trong một terminal và `npm run dev -- --host 127.0.0.1 --port 5173 --strictPort` trong terminal khác. Origin phải đúng `http://127.0.0.1:5173`; nếu dùng host/port khác, đổi `SITE_ORIGIN` tương ứng. Production preview local dùng `npm run build` rồi `npm run preview -- --host 127.0.0.1 --port 5173 --strictPort` cùng service media.
 
-Lưu tòa nhà/phòng trước, mở chỉnh sửa rồi chọn ảnh. JPEG/PNG/WebP tĩnh, tối đa10 MiB/20 MP, rộng sau EXIF từ1200px. Server tạo WebP chất lượng80, rộng600/1200, giữ tỷ lệ và loại metadata. Ảnh được liên kết ngay sau upload; nút Đóng form không hoàn tác ảnh đã liên kết. UI tối đa5 ảnh/entity; bỏ ảnh chỉ gỡ liên kết, không xóa file. Ảnh public; metadata riêng theo browser/origin.
+Lưu tòa nhà/phòng trước, mở chỉnh sửa rồi chọn ảnh. JPEG/PNG/WebP tĩnh, tối đa 10 MiB/20 MP, rộng sau EXIF từ 1200px. Server tạo WebP chất lượng 80, rộng 600/1200, giữ tỷ lệ và loại metadata. Ảnh được liên kết ngay sau upload; nút Đóng form không hoàn tác ảnh đã liên kết. UI tối đa 5 ảnh/entity; bỏ ảnh chỉ gỡ liên kết, không xóa file. Ảnh public; metadata riêng theo browser/origin.
 
 Dev lưu files trong `.media/` (ngoài Git), Vite proxy `/api` và `/images` tới `127.0.0.1:3001`. `npm run build:media` tạo `server-dist/server/main.js`; `npm run start:media` chạy entry production với environment do service cung cấp. Production bắt buộc roots tuyệt đối tồn tại, cùng filesystem, ngoài release; `SITE_ORIGIN` HTTPS, `release.json` có full SHA ở release chứa `server-dist/`. Default mode là production. Media bind loopback; Nginx phải cung cấp HTTPS + Basic Auth cho upload, body/rate limits và static `/images/`. Không đưa secrets vào `VITE_*` hoặc Git. Candidate dùng `MEDIA_READ_ONLY=true`, không upload hoặc dọn temp production.
 
-API nhận raw file `POST /api/images?entityType=building|room&entityId=<id>`, Origin đúng SITE_ORIGIN. `GET /api/health` kiểm tra quyền ghi và trả releaseId. Một ảnh xử lý tại một thời điểm (429 khi bận); deadline body30 giây. File ảnh cần backup riêng; không có garbage collection.
+API nhận raw file `POST /api/images?entityType=building|room&entityId=<id>`, Origin đúng SITE_ORIGIN. `GET /api/health` kiểm tra quyền ghi và trả releaseId. Một ảnh xử lý tại một thời điểm (429 khi bận); deadline body 30 giây. File ảnh cần backup riêng; không có garbage collection.
 
 Evidence: [Task1](docs/acceptance/task-1.md), [ảnh và compression](docs/acceptance/images.md). `npm run test:e2e` tự chạy production preview và media local; chạy `npm run build` trước. Có thể dùng `PLAYWRIGHT_BASE_URL` để kiểm tra origin đã triển khai; tests ảnh sẽ upload fixture tới origin đó.
+
+Giới hạn codec: bản WebP 1200px phải cao tối đa16383px; ảnh cực dọc vượt giới hạn này nhận 422. APNG nhiều frame bị từ chối. Đóng form/chuyển trang hủy upload đang chờ; ảnh đã liên kết vẫn giữ, còn file server đã tạo nhưng chưa liên kết có thể tồn tại. Writable media dùng OS lock theo tempRoot trên Linux/Windows, giữ lock đến khi xử lý đang chạy kết thúc, kể cả client ngắt kết nối. Các OS khác chưa hỗ trợ writable media.
