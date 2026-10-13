@@ -12,7 +12,8 @@
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
     "test:e2e": "playwright test",
     "build:media": "tsc -p server/tsconfig.json",
-    "start:media": "node server-dist/server/main.js"
+    "start:media": "node server-dist/server/main.js",
+    "dev:media": "node --env-file-if-exists=.env --experimental-strip-types server/main.ts"
   },
   "dependencies": {
     "lucide-react": "^1.55.0",

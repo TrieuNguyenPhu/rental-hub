@@ -39,6 +39,7 @@ export async function processImage(input: Buffer, declaredType: string, target: 
   const relative = `${target.entityType}-image/${target.entityId}/${id}`
   const pending = await fs.mkdtemp(path.join(tempRoot, 'upload-'))
   try {
+    await fs.writeFile(path.join(pending, '.owner'), 'rental-hub-image-upload', { flag: 'wx' })
     const outputs = []
     for (const size of [600, 1200] as const) {
       let output: { data: Buffer; info: OutputInfo }
@@ -49,6 +50,7 @@ export async function processImage(input: Buffer, declaredType: string, target: 
     }
     const destination = path.join(imagesRoot, relative)
     await fs.mkdir(path.dirname(destination), { recursive: true })
+    await fs.unlink(path.join(pending, '.owner'))
     await fs.chmod(pending, 0o755)
     await fs.rename(pending, destination)
     // shortcut: unlinked files remain, add GC only when centralized references and backups exist.
