@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createEstateStore } from '../src/store/estateStore.ts'
 import { createDemoData } from '../src/data/demo.ts'
 import { hasBookingOverlap } from '../src/utils/bookingOverlap.ts'
+import { validDate } from '../src/utils/validation.ts'
 import type { StateStorage } from 'zustand/middleware'
 import type { BookingInput, BuildingInput, RoomInput } from '../src/types/index.ts'
 
@@ -103,6 +104,25 @@ test('booking validates room, maintenance, required fields, real dates and date 
   const store = fixture()
   for (const patch of [{ roomId: 'missing' }, { roomId: 'room-4' }, { customerName: ' ' }, { customerPhone: '' }, { checkIn: '' }, { checkIn: '2027-02-30' }, { checkIn: '2027-2-1' }, { checkOut: '2027-02-10' }, { checkOut: '2027-02-09' }]) {
     assert.equal(store.getState().addBooking({ ...bookingInput, ...patch }).ok, false)
+  }
+})
+
+test('leap dates are validated without changing date-only values', () => {
+  assert.equal(validDate('2028-02-29'), true)
+  assert.equal(validDate('2026-02-29'), false)
+})
+
+test('booking creation and edits recheck building and room availability', () => {
+  for (const unavailable of ['room', 'building'] as const) {
+    const store = fixture()
+    const created = store.getState().addBooking(bookingInput)
+    assert.ok(created.ok)
+    if (unavailable === 'room') store.getState().updateRoom('room-8', { ...store.getState().rooms.find(r => r.id === 'room-8')!, status: 'maintenance' })
+    else store.getState().updateBuilding('building-2', { ...store.getState().buildings.find(b => b.id === 'building-2')!, status: 'inactive' })
+    const before = store.getState().bookings
+    assert.equal(store.getState().updateBooking(created.id, bookingInput).ok, false)
+    assert.equal(store.getState().addBooking({ ...bookingInput, checkIn: '2027-02-20', checkOut: '2027-02-25' }).ok, false)
+    assert.deepEqual(store.getState().bookings, before)
   }
 })
 test('booking overlap and edit self-exclusion are enforced by store actions', () => {

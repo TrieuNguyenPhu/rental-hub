@@ -30,8 +30,8 @@ export function validateBooking(input: BookingInput, data: EstateData, id?: stri
   if (!input.customerPhone.trim()) return 'Vui lòng nhập số điện thoại khách hàng.'
   const room = data.rooms.find(item => item.id === input.roomId)
   if (!room) return 'Vui lòng chọn một phòng tồn tại.'
-  const previous = data.bookings.find(item => item.id === id)
-  if (room.status === 'maintenance' && (!previous || previous.roomId !== room.id)) return 'Phòng đang bảo trì, không thể tạo hoặc chuyển booking vào phòng này.'
+  if (room.status === 'maintenance') return 'Phòng đang bảo trì, không thể tạo hoặc sửa booking vào phòng này.'
+  if (data.buildings.find(item => item.id === room.buildingId)?.status !== 'active') return 'Tòa nhà không hoạt động, không thể tạo hoặc sửa booking.'
   if (!validDate(input.checkIn) || !validDate(input.checkOut)) return 'Vui lòng nhập ngày nhận và trả phòng hợp lệ (YYYY-MM-DD).'
   if (input.checkOut <= input.checkIn) return 'Ngày trả phòng phải sau ngày nhận phòng.'
   if (hasBookingOverlap(data.bookings, input.roomId, input.checkIn, input.checkOut, id)) return 'Lịch đặt bị trùng với một booking đã xác nhận của phòng này. Vui lòng chọn ngày hoặc phòng khác.'
