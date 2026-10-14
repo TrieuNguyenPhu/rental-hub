@@ -4,7 +4,7 @@ Base: `512f7f9`. Branch: `feat/rental-hub-operations`.
 
 Scope: Task 2, remaining Task 4–5. Task 1 and Images already accepted. Task 3 accepted by the user and excluded from further implementation. AWS and VPS remain independent.
 
-Ruling: The user's request authorizes remaining implementation and supersedes the old proposal-only status. No paid resources may be created; VPS account/access is still needed for public acceptance.
+Ruling: The user's request authorizes remaining implementation and supersedes the old proposal-only status. No paid resources may be created; Hostinger VPS was declined due cost. Public VPS acceptance remains out of scope until a zero-cost VPS/access exists.
 Ruling: Use the existing node:test/Playwright stack and Bash deployment scripts; no new CI service, database, Docker deployment, or AWS infrastructure.
 Ruling: Implement VPS in an isolated worktree. Linux sandbox verification uses Ubuntu WSL with unpacked tools; it is not evidence of a public VPS.
 Ruling: Task 4 AWS uses its existing S3/CloudFront architecture, with separate version rollback instructions/scripts. Do not deploy new media infrastructure or run disruptive AWS drills.
@@ -19,6 +19,8 @@ Ruling: Task 4 AWS uses its existing S3/CloudFront architecture, with separate v
 
 ## Progress
 
-- Task 2: templates/runbook in progress; public VPS/SSH/domain evidence pending access.
-- Task 4: release scripts and failure checks in progress.
-- Task 5: production checks, sandbox drills, runbook and demo evidence in progress.
+- Task 2: implementation and Linux/Nginx/systemd/HTTPS/upload sandbox verification complete; public VPS/SSH/domain evidence pending a free host.
+- Task 4: VPS atomic release/rollback fixtures and AWS mocked VersionId rollback complete; live VPS/AWS evidence pending.
+- Task 5: 46 unit/API tests, lint/typecheck, Playwright 13/13 on local HTTPS, and sandbox 502/403/404 recovery complete; public evidence pending.
+
+Local evidence SHA: `67c5a2978f2226175097f130f7391aa7045d1940`. Nginx ran as `www-data`; media ran under a separate unprivileged systemd identity; a disposable Basic Auth fixture protected HTTPS upload. No AWS API calls, paid VPS, domain, or DNS changes were made. Task 3 remains accepted by the user and untouched.
