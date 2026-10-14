@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+exec > >(tee /var/log/rental-hub-bootstrap.log) 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y nginx git curl xz-utils ca-certificates ufw acl apache2-utils certbot
+
+node_archive=node-v24.18.0-linux-x64
+mkdir -p /tmp/rental-hub-node
+cd /tmp/rental-hub-node
+curl -fsSLO "https://nodejs.org/dist/v24.18.0/$node_archive.tar.xz"
+curl -fsSLO https://nodejs.org/dist/v24.18.0/SHASUMS256.txt
+grep " $node_archive.tar.xz$" SHASUMS256.txt | sha256sum -c -
+tar -xJf "$node_archive.tar.xz" -C /opt
+ln -s "/opt/$node_archive/bin/node" /usr/local/bin/node
+ln -s "/opt/$node_archive/bin/npm" /usr/local/bin/npm
+
+groupadd --system rental-hub
+useradd --system --gid rental-hub --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin rental-hub-media
+usermod -aG rental-hub ubuntu
+install -d -o ubuntu -g rental-hub -m 755 /srv/rental-hub /srv/rental-hub/releases /srv/rental-hub/shared /srv/rental-hub/shared/assets
+install -d -o rental-hub-media -g rental-hub -m 2770 /srv/rental-hub/shared/images /srv/rental-hub/shared/tmp
+setfacl -m u:www-data:r-x -m d:u:www-data:r-x /srv/rental-hub/shared/images
+install -d -o root -g rental-hub -m 750 /etc/rental-hub
+setfacl -m u:www-data:--x /etc/rental-hub
+
+ufw allow from ${admin_cidr} to any port 22 proto tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+systemctl enable nginx
+touch /var/log/rental-hub-bootstrap.done
