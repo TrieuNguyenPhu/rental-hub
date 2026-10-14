@@ -23,7 +23,7 @@ test('images.buildingAndRoomUpload reloads, serves WebP and enforces five images
     await page.setViewportSize({ width, height: 900 })
     expect(await page.getByRole('dialog').evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth)).toBe(true)
   }
-  await page.screenshot({ path: 'test-results/images-building-gallery.png', fullPage: true })
+  await page.screenshot({ path: '.local/test-results/images-building-gallery.png', fullPage: true })
   const assets = await storedImages(page, 'buildings', 'QA Tower')
   expect(assets).toHaveLength(5)
   expect(assets[0]).toMatchObject({ width600: 600, width1200: 1200, height600: 375, height1200: 750 })

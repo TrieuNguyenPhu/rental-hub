@@ -1,6 +1,6 @@
 # Task 2 — VPS Linux độc lập
 
-AWS Task 3 đã hoàn tất và nằm ngoài quy trình này. Task 2 hiện được chạy thử trên EC2 với Terraform riêng; xem [demo EC2](../../infra/ec2/README.md). Tài liệu dưới đây là hướng dẫn nếu triển khai một VPS Linux khác sau này.
+AWS Task 3 dùng S3/CloudFront và có Terraform riêng trong `infra/aws`. Tài liệu dưới đây hướng dẫn triển khai VPS Linux bằng các template trong `ops/deploy/`; cấu hình Terraform EC2 demo cũ đã được bỏ khỏi source.
 
 ## Điều kiện thực hiện
 
@@ -65,13 +65,13 @@ sudo install -d -o root -g rental-hub -m 750 /etc/rental-hub
 sudo setfacl -m u:www-data:--x /etc/rental-hub
 ```
 
-Đăng nhập lại deploy để nhận group mới. Clone repository vào `/home/deploy/rental-hub-source`; source phải chứa commit triển khai trên remote. Templates ở `deploy/` cần được review và thay `example.invalid` bằng origin thật.
+Đăng nhập lại deploy để nhận group mới. Clone repository vào `/home/deploy/rental-hub-source`; source phải chứa commit triển khai trên remote. Templates ở `ops/deploy/` cần được review và thay `example.invalid` bằng origin thật.
 
 ```bash
 git clone https://github.com/TrieuNguyenPhu/rental-hub.git ~/rental-hub-source
 cd ~/rental-hub-source
-sudo install -o root -g rental-hub -m 640 deploy/env/media.env.example /etc/rental-hub/media.env
-sudo install -o deploy -g deploy -m 600 deploy/env/deploy.env.example /etc/rental-hub/deploy.env
+sudo install -o root -g rental-hub -m 640 ops/deploy/env/media.env.example /etc/rental-hub/media.env
+sudo install -o deploy -g deploy -m 600 ops/deploy/env/deploy.env.example /etc/rental-hub/deploy.env
 ```
 
 Trong cả hai env, đặt cùng origin (`http://IP` nếu chưa có domain, hoặc `https://domain`); không có slash cuối. Với HTTP public, đặt `MEDIA_READ_ONLY=true`: health/frontend hoạt động, upload bị chặn. Chỉ đặt `MEDIA_READ_ONLY=false` sau khi bật HTTPS. Sửa file bằng sudo/editor, không đặt secret vào `VITE_*`. Template media chỉ chứa config, còn mật khẩu upload ở file riêng.
@@ -79,10 +79,10 @@ Trong cả hai env, đặt cùng origin (`http://IP` nếu chưa có domain, ho�
 ## Nginx và systemd
 
 ```bash
-sudo install -m 644 deploy/nginx/rental-hub-locations.conf /etc/nginx/snippets/rental-hub-locations.conf
-sudo install -m 644 deploy/nginx/rental-hub.conf /etc/nginx/conf.d/rental-hub.conf
-sudo install -m 644 deploy/nginx/rental-hub-staging.conf /etc/nginx/conf.d/rental-hub-staging.conf
-sudo install -m 644 deploy/systemd/rental-hub-media.service /etc/systemd/system/rental-hub-media.service
+sudo install -m 644 ops/deploy/nginx/rental-hub-locations.conf /etc/nginx/snippets/rental-hub-locations.conf
+sudo install -m 644 ops/deploy/nginx/rental-hub.conf /etc/nginx/conf.d/rental-hub.conf
+sudo install -m 644 ops/deploy/nginx/rental-hub-staging.conf /etc/nginx/conf.d/rental-hub-staging.conf
+sudo install -m 644 ops/deploy/systemd/rental-hub-media.service /etc/systemd/system/rental-hub-media.service
 sudo systemctl daemon-reload
 sudo systemctl enable rental-hub-media
 sudo nginx -t
@@ -101,18 +101,18 @@ Không cấp sudo Bash, node, editor hoặc wildcard systemctl. Service chỉ ch
 Deploy bằng full SHA đã push:
 
 ```bash
-bash scripts/deploy.sh FULL_40_HEX_COMMIT /etc/rental-hub/deploy.env
+bash ops/release/deploy.sh FULL_40_HEX_COMMIT /etc/rental-hub/deploy.env
 systemctl status rental-hub-media --no-pager
 sudo journalctl -u rental-hub-media -n 50 --no-pager
 ss -lntp
-bash scripts/smoke.sh http://ACTUAL_IP FULL_40_HEX_COMMIT
+bash ops/release/smoke.sh http://ACTUAL_IP FULL_40_HEX_COMMIT
 ```
 
 Xác minh từ một mạng ngoài VPS: trang chủ, `/rooms`, reload, CRUD, asset JS đúng MIME; API port 3001/3002 và candidate 8081 không truy cập được. Đối chiếu [release runbook](releases.md) và [Task 2 acceptance](../acceptance/task-2.md).
 
 ## HTTPS và upload
 
-Khi có domain: DNS A trỏ VPS, chỉ giữ AAAA khi VPS thực sự phục vụ IPv6. Cài `certbot`; lấy chứng chỉ bằng HTTP webroot `/var/www/letsencrypt` (thêm location `/.well-known/acme-challenge/` trước). Cấu hình theo `deploy/nginx/rental-hub-https.conf.example`; thay domain/đường cert, đổi HTTP sang redirect ngoại trừ ACME và `/api/images` (vẫn 403).
+Khi có domain: DNS A trỏ VPS, chỉ giữ AAAA khi VPS thực sự phục vụ IPv6. Cài `certbot`; lấy chứng chỉ bằng HTTP webroot `/var/www/letsencrypt` (thêm location `/.well-known/acme-challenge/` trước). Cấu hình theo `ops/deploy/nginx/rental-hub-https.conf.example`; thay domain/đường cert, đổi HTTP sang redirect ngoại trừ ACME và `/api/images` (vẫn 403).
 
 ```bash
 sudo apt-get install -y certbot

@@ -37,7 +37,7 @@ CRUD vẫn lưu ở localStorage theo browser/origin. Dữ liệu ở localhost/
 
 ## Cấu trúc Terraform
 
-Hạ tầng được quản lý bằng **Terraform** trong `infra/aws/`: `main.tf` chứa tài nguyên và chính sách; `versions.tf` cấu hình provider; `outputs.tf` trả URL và thông tin cho script upload. Provider AWS chính dùng Sydney, provider alias `logs` dùng `us-east-1`. Provider giới hạn account `287872994400`; `.terraform.lock.hcl` khóa phiên bản AWS provider. Không chứa credential; Terraform và AWS CLI dùng credential/profile đã đăng nhập trên máy.
+Hạ tầng được quản lý bằng **Terraform** trong `infra/aws/`: `main.tf` nối bốn module `storage`, `cdn`, `logging`, `admin`; `locals.tf` chứa cấu hình chung; `versions.tf` cấu hình provider; `outputs.tf` trả URL và thông tin cho script upload. `moved.tf` giữ ánh xạ từ địa chỉ tài nguyên cũ; xem [cấu trúc và migration](architecture.md). Provider AWS chính dùng Sydney, provider alias `logs` dùng `us-east-1`. Provider giới hạn account `287872994400`; `.terraform.lock.hcl` khóa phiên bản AWS provider. Không chứa credential; Terraform và AWS CLI dùng credential/profile đã đăng nhập trên máy.
 
 Các tài nguyên đã tạo được import vào Terraform, không tạo lại bucket/distribution hoặc thay URL. `imports.tf.example` lưu các import block để phục hồi state nếu cần. Đây là cấu hình cho account và website này, không phải module nhiều môi trường.
 
@@ -70,7 +70,7 @@ terraform '-chdir=infra/aws' apply changes.tfplan
 terraform '-chdir=infra/aws' output website_url
 ```
 
-`terraform test` dùng mocked provider, không tạo tài nguyên AWS. Hạ tầng thay đổi qua Terraform; build và upload nội dung `dist/` dùng AWS CLI để giữ asset hash cũ và upload index cuối cùng.
+`terraform test` dùng mocked provider, không tạo tài nguyên AWS. Hạ tầng thay đổi qua Terraform; build và upload nội dung `.local/build/web/` dùng AWS CLI để giữ asset hash cũ và upload index cuối cùng.
 
 **State local:** giữ và sao lưu riêng `infra/aws/terraform.tfstate` cùng `.backup`. State, plan và `.terraform/` bị loại khỏi Git; lock file được giữ trong Git. Chưa tạo remote backend hoặc bucket thứ ba. Nếu chuyển máy hoặc làm theo nhóm, cần chuyển state có kiểm soát sang backend có locking. Không chạy hai lần Terraform apply/deploy đồng thời.
 
@@ -92,7 +92,7 @@ Chạy từ thư mục repository với Node.js 24, npm, PowerShell, Terraform v
 
 ```powershell
 aws sts get-caller-identity
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-aws.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File ops/aws/deploy-aws.ps1
 ```
 
 Script lấy resource identifiers từ Terraform outputs, kiểm tra đúng account, bucket owner và CloudFront origin; chạy lint, unit tests và production build (bao gồm typecheck). Bất kỳ lệnh lỗi nào cũng dừng triển khai. Nếu build thất bại, script chưa upload file. Asset mới upload trước, giữ asset hash cũ, index upload cuối cùng; không dùng `sync --delete`. Script đợi distribution/invalidation, so sánh HTML của bốn route với bản build, và kiểm tra MIME type JavaScript.
@@ -100,7 +100,7 @@ Script lấy resource identifiers từ Terraform outputs, kiểm tra đúng acco
 Xem trước với `-WhatIf`: vẫn chạy quality gates và đọc AWS identity/config, nhưng không upload/invalidate.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-aws.ps1 -WhatIf
+powershell -NoProfile -ExecutionPolicy Bypass -File ops/aws/deploy-aws.ps1 -WhatIf
 $env:PLAYWRIGHT_BASE_URL = 'https://d2pqq5rtvfmo3w.cloudfront.net'
 npm run test:e2e
 Remove-Item Env:PLAYWRIGHT_BASE_URL

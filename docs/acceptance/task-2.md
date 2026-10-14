@@ -1,6 +1,6 @@
 # Task 2 — Trạng thái nghiệm thu
 
-Ngày 2026-10-14. Theo yêu cầu mới, Task 2 được chạy thử trên EC2 độc lập với S3/CloudFront của Task 3. AWS Free Plan còn 140 USD credit khi cấp máy; máy vẫn đang chạy để người dùng xem trước khi xóa.
+Ngày 2026-10-14. Task 2 đã được chạy thử trên EC2 độc lập với S3/CloudFront của Task 3. AWS Free Plan còn 140 USD credit khi cấp máy; đây là hồ sơ của lần chạy demo, không phải xác nhận trạng thái máy hiện tại.
 
 - [x] Nginx HTTP/HTTPS/candidate templates; tách SPA, assets, images, API.
 - [x] systemd unit non-root, env templates, runbook SSH/filesystem/firewall/HTTPS.
@@ -12,4 +12,4 @@ Ngày 2026-10-14. Theo yêu cầu mới, Task 2 được chạy thử trên EC2 
 - [x] Let's Encrypt TLS hợp lệ; HTTP upload trả 403, HTTPS Basic Auth không đăng nhập trả 401, Origin sai trả 403; Nginx access log và journal media ghi nhận request. `certbot renew --dry-run` thành công.
 - [x] Diễn tập dừng media: `/api/health` trả 502, SPA `/rooms` vẫn 200; khởi động lại và smoke công khai đạt.
 
-EC2 là máy demo có thời hạn, không phải VPS miễn phí vĩnh viễn. Credit AWS được dùng khi máy chạy; billing có thể cập nhật chậm. Terraform state giữ tại `infra/ec2` để xóa đúng máy sau khi người dùng xác nhận đã xem. `delete_on_termination=true`, nên ảnh trên volume sẽ mất khi xóa. Dữ liệu metadata trong localStorage của mỗi trình duyệt không đồng bộ. AWS Task 3 không thay đổi.
+Cấu hình EC2 demo đã được bỏ khỏi source ngày 2026-10-14; việc dọn source không thực hiện teardown AWS. Instance đã dùng là `i-0ece2455235401517`, cần đối chiếu trong AWS hoặc bản state lưu riêng nếu muốn teardown. Credit AWS vẫn được dùng nếu máy còn chạy. `delete_on_termination=true`, nên ảnh trên volume sẽ mất khi xóa máy. Dữ liệu metadata trong localStorage của mỗi trình duyệt không đồng bộ. AWS Task 3 không thay đổi.

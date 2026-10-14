@@ -10,7 +10,7 @@ Verified locally on Node 24.18.0 and Chrome, using the production Vite preview a
 - Persistence/reload, empty data stays empty, legacy version 0/absent images, version 1 writes, corrupt JSON/schema remains intact, export before confirmed reset, failed writes retain memory and display a reactive warning: unit and browser checks.
 - Production deep links and 404, no page errors, labels, dialog Tab/Escape/focus restoration, responsive widths 320/768/1024/1440: browser checks.
 
-Commands: `npm run typecheck`, `npm test` (23 passing), `npm run build`, `npm run test:e2e` (10 passing). Build emits `dist/index.html` with existing hashed CSS/JS. Browser evidence is in the executable `tests/e2e/app.spec.ts`; all customers and test addresses are synthetic. Playwright's inherited NO_COLOR/FORCE_COLOR warning is a runner warning, not an app Console error.
+Commands: `npm run typecheck`, `npm test` (23 passing), `npm run build`, `npm run test:e2e` (10 passing). Build emits `.local/build/web/index.html` with existing hashed CSS/JS. Browser evidence is in the executable `tests/e2e/app.spec.ts`; all customers and test addresses are synthetic. Playwright's inherited NO_COLOR/FORCE_COLOR warning is a runner warning, not an app Console error.
 
 Compatibility decisions: retain `roomNumber`/`rentalPrice`, the existing storage key, and legacy building `maintenance`; accept both envelope versions 0 and 1. Normalization happens in memory without rewriting a stored original on hydrate. The existing node:test runner replaces the plan's illustrative Vitest commands. Zustand still owns mutations; its synchronous storage subscription makes write failures recoverable without rolling back memory.
 
