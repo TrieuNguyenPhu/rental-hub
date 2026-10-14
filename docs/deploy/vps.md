@@ -61,6 +61,8 @@ sudo install -d -o rental-hub-media -g rental-hub -m 2770 /srv/rental-hub/shared
 # Nginx đọc ảnh; không cấp quyền ghi cho www-data.
 sudo setfacl -m u:www-data:r-x -m d:u:www-data:r-x /srv/rental-hub/shared/images
 sudo install -d -o root -g rental-hub -m 750 /etc/rental-hub
+# Chỉ cho Nginx đi qua thư mục để đọc đúng file htpasswd có group www-data.
+sudo setfacl -m u:www-data:--x /etc/rental-hub
 ```
 
 Đăng nhập lại deploy để nhận group mới. Clone repository vào `/home/deploy/rental-hub-source`; source phải chứa commit triển khai trên remote. Templates ở `deploy/` cần được review và thay `example.invalid` bằng origin thật.
@@ -72,7 +74,7 @@ sudo install -o root -g rental-hub -m 640 deploy/env/media.env.example /etc/rent
 sudo install -o deploy -g deploy -m 600 deploy/env/deploy.env.example /etc/rental-hub/deploy.env
 ```
 
-Trong cả hai env, đặt cùng origin (`http://IP` nếu chưa có domain, hoặc `https://domain`); không có slash cuối. Sửa file bằng sudo/editor, không đặt secret vào `VITE_*`. Template media chỉ chứa config, còn mật khẩu upload ở file riêng.
+Trong cả hai env, đặt cùng origin (`http://IP` nếu chưa có domain, hoặc `https://domain`); không có slash cuối. Với HTTP public, đặt `MEDIA_READ_ONLY=true`: health/frontend hoạt động, upload bị chặn. Chỉ đặt `MEDIA_READ_ONLY=false` sau khi bật HTTPS. Sửa file bằng sudo/editor, không đặt secret vào `VITE_*`. Template media chỉ chứa config, còn mật khẩu upload ở file riêng.
 
 ## Nginx và systemd
 
@@ -124,6 +126,6 @@ sudo systemctl reload nginx
 sudo certbot renew --dry-run
 ```
 
-`htpasswd` hỏi mật khẩu tương tác; không truyền password qua command line. Đổi SITE_URL và SITE_ORIGIN sang HTTPS trước khi restart media. Xác minh certificate chain/hostname/expiry, redirect và renewal. Upload chưa auth phải 401, sai Origin phải 403, quá 10 MiB phải 413; thử UI ảnh building/room bằng tài khoản demo.
+`htpasswd` hỏi mật khẩu tương tác; không truyền password qua command line. Đổi SITE_URL và SITE_ORIGIN sang HTTPS, đặt `MEDIA_READ_ONLY=false` trước khi restart media. Kiểm tra `sudo -u www-data test -r /etc/rental-hub/upload.htpasswd`. Xác minh certificate chain/hostname/expiry, redirect và renewal. Upload chưa auth phải 401, sai Origin phải 403, quá 10 MiB phải 413; thử UI ảnh building/room bằng tài khoản demo.
 
 Nếu chưa có domain/HTTPS, chỉ nghiệm thu frontend HTTP. API có thể kiểm thử qua SSH tunnel loopback nhưng **không đánh dấu upload Internet đạt**. Không gửi Basic Auth qua HTTP public. Backup shared/images riêng và xuất localStorage từ trình duyệt; rollback code không khôi phục metadata browser.

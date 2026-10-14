@@ -29,7 +29,7 @@ test('production serves the expected release, real assets and strict static erro
 test('production uploads building and room images over authenticated TLS', async ({ page, request, baseURL }, testInfo) => {
   test.skip(!process.env.UPLOAD_TEST_USER, 'Upload acceptance needs HTTPS and externally supplied test credentials')
   expect(new URL(baseURL!).protocol).toBe('https:')
-  const unauthenticated = await requestFactory.newContext({ baseURL, ignoreHTTPSErrors: Boolean(testInfo.project.use.ignoreHTTPSErrors) })
+  const unauthenticated = await requestFactory.newContext({ baseURL, httpCredentials: { username: '', password: '' }, ignoreHTTPSErrors: Boolean(testInfo.project.use.ignoreHTTPSErrors) })
   try {
     const denied = await unauthenticated.post('/api/images?entityType=building&entityId=qa', { data: Buffer.from('invalid'), headers: { Origin: baseURL! } })
     expect(denied.status()).toBe(401)

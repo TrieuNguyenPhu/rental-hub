@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPTS=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 fail() { echo "ERROR: $*" >&2; exit 1; }
 init_release() {
+  umask 022
   [[ $# == 2 && $1 =~ ^[a-f0-9]{40}$ ]] || fail 'Usage: command <full commit SHA> <trusted config file>'
   SHA=$1
   local config mode owner directory
@@ -37,7 +38,7 @@ check_release() {
   local directory=$1 expected=$2
   [[ -d $directory && ! -L $directory && $(realpath -e "$directory") == "$APP_ROOT/releases/$expected" ]] || fail 'Release path is invalid'
   [[ -f $directory/release.sha256 && -f $directory/dist/index.html && -f $directory/server-dist/server/main.js && -d $directory/node_modules ]] || fail 'Release is incomplete'
-  (cd "$directory"; sha256sum --check --quiet release.sha256; node --input-type=module -e '
+  (cd "$directory" && sha256sum --check --quiet release.sha256 && node --input-type=module -e '
     import fs from "node:fs";
     const m=JSON.parse(fs.readFileSync("release.json"));
     if(m.releaseId!==process.argv[1] || m.commit!==process.argv[1] || fs.readFileSync("release.json","utf8")!==fs.readFileSync("dist/release.json","utf8")) process.exit(1);
@@ -74,6 +75,7 @@ fs.writeFileSync('dist/release.json', manifest);
 NODE
     find dist server-dist node_modules release.json package.json package-lock.json -type f -print0 | sort -z | xargs -0 sha256sum > release.sha256
   )
+  chmod 755 "$STAGING"
   mv -- "$STAGING" "$RELEASE"
   STAGING=
   check_release "$RELEASE" "$SHA"
@@ -129,9 +131,11 @@ check_candidate() {
 
 activate_release() {
   if [[ -L $APP_ROOT/current ]]; then
-    PREVIOUS=$(readlink -e "$APP_ROOT/current")
-    [[ $PREVIOUS == "$APP_ROOT/releases/"* && ${PREVIOUS##*/} =~ ^[a-f0-9]{40}$ ]] || fail 'Current release points outside releases'
-    check_release "$PREVIOUS" "${PREVIOUS##*/}"
+    local old_current
+    old_current=$(readlink -m "$APP_ROOT/current")
+    [[ $old_current == "$APP_ROOT/releases/${old_current##*/}" && ${old_current##*/} =~ ^[a-f0-9]{40}$ ]] || fail 'Current release points outside releases'
+    if (check_release "$old_current" "${old_current##*/}"); then PREVIOUS=$old_current
+    else echo 'Current release is damaged; only the verified target can be activated' >&2; fi
   elif [[ -e $APP_ROOT/current ]]; then fail 'Current must be a symlink'; fi
   ACTIVATING=true
   echo "ACTIVATE $SHA"
@@ -159,7 +163,7 @@ finish() {
     else
       [[ ! -L $APP_ROOT/current ]] || rm -- "$APP_ROOT/current"
       sudo -n systemctl stop rental-hub-media
-      echo 'First deployment failed; no previous release exists' >&2
+      echo 'Activation failed; no previous release is recoverable' >&2
     fi
   fi
   if [[ -n $STAGING && $STAGING == "$APP_ROOT/releases/.build."* && -d $STAGING && ! -L $STAGING ]]; then rm -rf -- "$STAGING"; fi

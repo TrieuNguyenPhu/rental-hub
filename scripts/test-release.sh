@@ -99,7 +99,9 @@ git -C "$test_root/repo" add .; git -C "$test_root/repo" commit -qm failure
 bad=$(git -C "$test_root/repo" rev-parse HEAD)
 expect_failure() { if "$@" > "$test_root/expected-failure.log" 2>&1; then echo "FAIL: unexpectedly succeeded: $*"; exit 1; fi; }
 assert_current() { [[ $(readlink -f "$test_root/app/current") == "$test_root/app/releases/$1" ]] || { echo 'FAIL: current changed unexpectedly'; exit 1; }; }
-bash "$scripts/build-release.sh" "$a" "$test_root/config"
+(umask 077; bash "$scripts/build-release.sh" "$a" "$test_root/config")
+[[ $(stat -c %a "$test_root/app/releases/$a") == 755 ]] || { echo 'FAIL: release must be traversable by service users'; exit 1; }
+[[ $(stat -c %a "$test_root/app/releases/$a/dist/index.html") == 644 ]] || { echo 'FAIL: release files must be readable by Nginx'; exit 1; }
 ln -s "releases/$a" "$test_root/app/current"
 expect_failure bash "$scripts/build-release.sh" "$bad" "$test_root/config"
 assert_current "$a"
@@ -191,6 +193,13 @@ printf 'corrupted' > "$test_root/app/releases/$b/dist/index.html"
 expect_failure bash "$scripts/deploy.sh" "$b" "$test_root/config"
 assert_current "$a"
 echo 'PASS: corrupt candidate never activated'
+ln -sfn "releases/$b" "$test_root/app/current"
+bash "$scripts/rollback.sh" "$a" "$test_root/config"
+assert_current "$a"
+ln -sfn "releases/0000000000000000000000000000000000000000" "$test_root/app/current"
+bash "$scripts/rollback.sh" "$a" "$test_root/config"
+assert_current "$a"
+echo 'PASS: healthy rollback repairs corrupted and dangling current releases'
 (flock -x 9; touch "$test_root/locked"; sleep 33) 9>"$test_root/app/.deploy.lock" &
 locker=$!
 while [[ ! -f $test_root/locked ]]; do sleep .1; done

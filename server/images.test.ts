@@ -17,6 +17,20 @@ async function roots(t: TestContext) {
 const source = (width = 1600, height = 1000) => sharp({ create: { width, height, channels: 3, background: '#8c9fab' } }).jpeg().toBuffer()
 const target = { entityType: 'building', entityId: 'building-1' } as const
 
+test('images remain publicly readable under the service umask', { skip: process.platform === 'win32' }, async t => {
+  const { images, temp } = await roots(t)
+  const unit = await fs.readFile(new URL('../deploy/systemd/rental-hub-media.service', import.meta.url), 'utf8')
+  const mask = unit.match(/^UMask=(\d+)$/m)
+  assert.ok(mask)
+  const previous = process.umask(Number.parseInt(mask[1], 8))
+  try {
+    const result = await processImage(await source(), 'image/jpeg', target, images, temp)
+    for (const url of [result.url600, result.url1200]) {
+      assert.equal((await fs.stat(path.join(images, url.slice(8)))).mode & 0o777, 0o644)
+    }
+  } finally { process.umask(previous) }
+})
+
 test('images.producesPairedWebp', async t => {
   const { images, temp } = await roots(t)
   const result = await processImage(await source(), 'image/jpeg', target, images, temp)

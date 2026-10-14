@@ -6,6 +6,8 @@ import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { request } from 'node:http'
 import { once } from 'node:events'
+import { spawn } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 import { startMediaServer } from './main.ts'
 import type { MediaConfig } from './main.ts'
@@ -28,6 +30,34 @@ async function fixture(t: TestContext, readOnly = false, prepare?: (config: Medi
   return { server, url, config }
 }
 const upload = (url: string, input: Buffer, headers: Record<string, string> = {}, route = endpoint) => fetch(url + route, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'image/jpeg', ...headers }, body: new Uint8Array(input) })
+
+test('api public HTTP requires read-only mode', async t => {
+  const siteOrigin = 'http://203.0.113.10'
+  const { url, config } = await fixture(t, true, async config => { config.siteOrigin = siteOrigin })
+  assert.equal((await fetch(url + '/api/health')).status, 200)
+  assert.equal((await upload(url, Buffer.from('x'), { Origin: siteOrigin })).status, 503)
+  await assert.rejects(startMediaServer({ ...config, readOnly: false }), /HTTPS/)
+})
+
+test('api CLI starts through the current directory symlink', { timeout: 10000 }, async t => {
+  const root = await fs.mkdtemp(path.join(tmpdir(), 'rental-cli-test-'))
+  const sourceRoot = path.dirname(fileURLToPath(import.meta.url))
+  await fs.symlink(sourceRoot, path.join(root, 'current'), 'junction')
+  const { server, config } = await fixture(t)
+  const address = server.address()
+  assert.ok(address && typeof address !== 'string')
+  const child = spawn(process.execPath, ['--experimental-strip-types', path.join(root, 'current', 'main.ts')], {
+    env: { ...process.env, NODE_ENV: 'development', MEDIA_PORT: String(address.port), MEDIA_READ_ONLY: 'true', SITE_ORIGIN: origin, IMAGES_ROOT: config.imagesRoot, TEMP_ROOT: config.tempRoot },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  })
+  // Occupied port must produce a startup error; a silently skipped main exits zero.
+  t.after(async () => { child.kill(); await fs.rm(root, { recursive: true, force: true }) })
+  let error = ''
+  child.stderr.on('data', chunk => { error += chunk.toString() })
+  const [code] = await once(child, 'exit')
+  assert.equal(code, 1)
+  assert.match(error, /Media startup failed/)
+})
 
 function streaming(url: string, headers: Record<string, string> = {}) {
   const req = request(url + endpoint, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'image/jpeg', ...headers } })
