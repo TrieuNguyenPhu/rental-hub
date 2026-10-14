@@ -19,6 +19,8 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 
 ## Production build
 
+Task 2/4/5: xem [VPS độc lập](docs/deploy/vps.md), [deploy/rollback](docs/deploy/releases.md), [runbook sự cố](docs/runbook/troubleshooting.md) và [nghiệm thu](docs/acceptance/demo.md). AWS Task 3 giữ nguyên kiến trúc đã hoàn thành. Các template/script VPS đã chuẩn bị; chưa có VPS public để nghiệm thu thực tế.
+
 ```bash
 npm run build
 npm run preview

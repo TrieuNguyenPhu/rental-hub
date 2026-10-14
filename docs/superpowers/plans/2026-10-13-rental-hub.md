@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Trạng thái: bản kế hoạch đề xuất; chưa cho phép thực thi code/hạ tầng. Các giả định tại spec §2 cần xác nhận trước khi thực thi.
+- Trạng thái cập nhật 2026-10-14: người dùng yêu cầu hoàn tất các task còn lại, chi phí 0đ. Task 1/Images đã nghiệm thu; Task 3 đã xong trước kế hoạch và không thực thi lại. VPS/AWS độc lập. Xem `docs/acceptance/operations-execution.md`; triển khai VPS public chờ tài khoản/SSH thực tế.
 - Task 1 và task 3 đã hoàn thành theo người dùng; nghiệm thu trước, chỉ bổ sung phần thiếu, không viết lại mặc định.
 - Không khảo sát code để lập thiết kế; mọi đường dẫn/API frontend là mục tiêu cần đối chiếu khi thực thi. Không invent line number hoặc tuyên bố test đã chạy.
 - React, TypeScript, Zustand, Git, Linux, VPS và AWS là yêu cầu bắt buộc. Baseline mới: Ubuntu 24.04 LTS, Node.js 24 LTS, Nginx, EC2/EBS.
