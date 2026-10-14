@@ -37,14 +37,23 @@ try {
         Invoke-Aws @('cloudfront', 'wait', 'invalidation-completed', '--distribution-id', $deployment.DistributionId, '--id', $id) | Out-Null
     }
     $websiteUrl = "https://$($deployment.DomainName)"
+    function Request-Website([string]$Url) {
+        for ($attempt = 1; $attempt -le 6; $attempt++) {
+            try { return Invoke-WebRequest $Url -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 30 }
+            catch {
+                if ($attempt -eq 6) { throw }
+                Start-Sleep -Seconds 5
+            }
+        }
+    }
     function Verify-Website([string]$Index) {
         foreach ($route in @('/', '/buildings', '/rooms', '/bookings')) {
-            $response = Invoke-WebRequest "$websiteUrl$route" -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 30
+            $response = Request-Website "$websiteUrl$route"
             if ($response.StatusCode -ne 200 -or $response.Content -ne $Index) { throw "Smoke check failed: $route" }
         }
         $asset = [regex]::Match($Index, 'src="(/assets/[^" ]+\.js)"').Groups[1].Value
         if (-not $asset) { throw 'Build has no JavaScript entry point' }
-        $response = Invoke-WebRequest "$websiteUrl$asset" -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 30
+        $response = Request-Website "$websiteUrl$asset"
         if ($response.Headers['Content-Type'] -notmatch '(javascript|ecmascript)') { throw 'JavaScript asset has incorrect MIME type' }
     }
     function Restore-Index([string]$Version) {

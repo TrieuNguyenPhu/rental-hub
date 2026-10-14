@@ -19,4 +19,6 @@ Script từ chối working tree bẩn, SHA khác `origin/main`, CI push chưa đ
 
 HTML trên CloudFront có `<meta name="release-sha" content="...">` để đối chiếu với `/release.json` trên EC2 và `main` của GitHub. Khi rollback S3, marker trở về phiên bản cũ cùng với index.
 
+Smoke HTTP sau invalidation thử lại lỗi kết nối tối đa 6 lần, cách nhau 5 giây; lỗi nội dung hoặc MIME vẫn dừng phát hành và khôi phục index trước đó.
+
 Docker/Kubernetes/Argo CD/Cosign không được thêm: frontend là static build trên S3, media là một systemd service trên EC2, không có container registry hay cluster. Terraform tiếp tục quản lý tài nguyên hiện có, không chạy apply trong CI. CloudWatch/S3 logs, journalctl và Nginx log dùng để chẩn đoán sau phát hành.
