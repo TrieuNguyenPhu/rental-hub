@@ -15,7 +15,7 @@ try {
     if ($sha -notmatch '^[a-f0-9]{40}$' -or $sha -ne (& git rev-parse origin/main).Trim()) { throw 'Local main must equal origin/main.' }
     if (-not (Test-Path -LiteralPath $SshKeyPath -PathType Leaf)) { throw 'EC2 SSH key is missing.' }
 
-    $ci = & gh run list -R TrieuNguyenPhu/rental-hub --workflow ci.yml --commit $sha --event push --limit 1 --json status,conclusion,headSha
+    $ci = & gh run list -R TrieuNguyenPhu/rental-hub --workflow ci.yml --branch main --commit $sha --event push --limit 1 --json status,conclusion,headSha
     if ($LASTEXITCODE -ne 0) { throw 'Could not read GitHub CI status.' }
     $run = @(($ci | ConvertFrom-Json))
     if ($run.Count -ne 1 -or $run[0].status -ne 'completed' -or $run[0].conclusion -ne 'success' -or $run[0].headSha -ne $sha) {
