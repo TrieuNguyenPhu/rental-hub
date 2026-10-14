@@ -41,7 +41,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'EC2 deployment failed; inspect its release logs.' }
 
     try {
-        & "$PSScriptRoot/deploy-aws.ps1"
+        & "$PSScriptRoot/deploy-aws.ps1" -ReleaseSha $sha
         Write-Host "Both production environments verified at main $sha"
     } catch {
         $failure = $_

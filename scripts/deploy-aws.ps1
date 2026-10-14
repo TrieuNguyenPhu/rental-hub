@@ -1,5 +1,5 @@
 [CmdletBinding(SupportsShouldProcess)]
-param([string]$RollbackVersionId)
+param([string]$RollbackVersionId, [string]$ReleaseSha)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -7,6 +7,9 @@ Push-Location (Split-Path $PSScriptRoot -Parent)
 $lock = $null
 $temporary = $null
 try {
+    if ($ReleaseSha -and ($ReleaseSha -notmatch '^[a-f0-9]{40}$' -or $RollbackVersionId)) {
+        throw 'ReleaseSha must be a full lowercase Git SHA and cannot be combined with rollback.'
+    }
     # One operator machine at a time; do not run this from two separate checkouts/hosts.
     $lock = [IO.File]::Open((Join-Path (Get-Location) '.aws-deploy.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
     $terraformOutput = & terraform '-chdir=infra/aws' output -json deployment
@@ -76,7 +79,13 @@ try {
             & npm run $gate
             if ($LASTEXITCODE -ne 0) { throw "Quality gate failed: $gate. Nothing uploaded." }
         }
-        $index = [IO.File]::ReadAllText((Join-Path (Get-Location) 'dist/index.html'))
+        $indexPath = Join-Path (Get-Location) 'dist/index.html'
+        $index = [IO.File]::ReadAllText($indexPath)
+        if ($ReleaseSha) {
+            if ([regex]::Matches($index, '<head>').Count -ne 1) { throw 'Build index must contain one head element.' }
+            $index = $index.Replace('<head>', "<head><meta name=`"release-sha`" content=`"$ReleaseSha`">")
+            [IO.File]::WriteAllText($indexPath, $index)
+        }
         $publishedKeys = (Invoke-Aws @('s3api', 'list-objects-v2', '--bucket', $deployment.WebsiteBucket, '--expected-bucket-owner', $deployment.AccountId, '--query', 'Contents[].Key', '--output', 'json')) | ConvertFrom-Json
         $distRoot = (Resolve-Path 'dist').Path
         foreach ($file in Get-ChildItem -LiteralPath $distRoot -Recurse -File) {
