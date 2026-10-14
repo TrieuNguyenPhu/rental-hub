@@ -8,6 +8,7 @@ $global:RentalHubTestBuildFails = $false
 $global:RentalHubTestCopies = 0
 $global:RentalHubTestUploads = 0
 $global:RentalHubTestUploadedIndex = ''
+$global:RentalHubTestNetworkFailures = 0
 function global:terraform {
     $global:LASTEXITCODE = 0
     '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
@@ -55,6 +56,10 @@ function global:aws {
 }
 function global:Invoke-WebRequest {
     param($Uri, [switch]$UseBasicParsing, $MaximumRedirection, $TimeoutSec)
+    if ($global:RentalHubTestNetworkFailures -gt 0) {
+        $global:RentalHubTestNetworkFailures--
+        throw 'Simulated transient DNS failure'
+    }
     if ($global:RentalHubTestFailSmoke -and $global:RentalHubTestActive -eq 'A') { throw 'Simulated failed activation' }
     if ($Uri -match '/assets/') {
         return @{ StatusCode = 200; Content = 'console.log(1)'; Headers = @{ 'Content-Type' = 'application/javascript' } }
@@ -91,7 +96,9 @@ try {
     Assert-Equal $global:RentalHubTestUploads 0 'Changed non-hashed files cannot break rollback'
     [IO.File]::WriteAllText((Join-Path $fixture 'dist/favicon.svg'), 'old-file')
     $sha = '1234567890abcdef1234567890abcdef12345678'
+    $global:RentalHubTestNetworkFailures = 1
     & $deploy -ReleaseSha $sha -Confirm:$false
+    Assert-Equal $global:RentalHubTestNetworkFailures 0 'Transient DNS failure retried'
     if ($global:RentalHubTestUploadedIndex -notlike "*<meta name=`"release-sha`" content=`"$sha`">*") { throw 'Release marker missing from uploaded index' }
     Assert-Equal $global:RentalHubTestActive C 'Release index activated'
     Write-Host 'PASS: AWS rollback, missing asset, recovery and failed build (mock transport; no AWS requests)'
