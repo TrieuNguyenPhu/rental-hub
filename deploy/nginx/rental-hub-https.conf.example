@@ -1,0 +1,26 @@
+# Use after obtaining the certificate. Keep the rate zone in rental-hub.conf.
+server {
+    listen 443 ssl;
+    server_name example.invalid;
+    ssl_certificate /etc/letsencrypt/live/example.invalid/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.invalid/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    access_log /var/log/nginx/rental-hub.access.log;
+    error_log /var/log/nginx/rental-hub.error.log;
+    include /etc/nginx/snippets/rental-hub-locations.conf;
+    location = /api/images {
+        auth_basic "Rental Hub uploads";
+        auth_basic_user_file /etc/rental-hub/upload.htpasswd;
+        limit_req zone=rental_hub_upload burst=3 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+}
+# In the HTTP server, replace its general locations include with:
+# location /.well-known/acme-challenge/ { root /var/www/letsencrypt; }
+# location / { return 308 https://example.invalid$request_uri; }
+# Keep exact location = /api/images { return 403; } on HTTP.

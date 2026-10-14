@@ -58,7 +58,7 @@ export async function startMediaServer(config: MediaConfig): Promise<Server> {
   if (config.host !== '127.0.0.1' || !Number.isInteger(config.port) || config.port < 0 || config.port > 65535 || !config.releaseId || typeof config.readOnly !== 'boolean') throw new Error('Invalid media configuration')
   let site: URL
   try { site = new URL(config.siteOrigin) } catch { throw new Error('Invalid site origin') }
-  if (site.origin !== config.siteOrigin || !['http:', 'https:'].includes(site.protocol) || (site.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(site.hostname))) throw new Error('Use an exact HTTPS or localhost origin')
+  if (site.origin !== config.siteOrigin || !['http:', 'https:'].includes(site.protocol) || (!config.readOnly && site.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(site.hostname))) throw new Error('Use an exact origin; writable media requires HTTPS or localhost')
   if (!path.isAbsolute(config.imagesRoot) || !path.isAbsolute(config.tempRoot)) throw new Error('Storage roots must be absolute')
   const imagesRoot = await fs.realpath(config.imagesRoot), tempRoot = await fs.realpath(config.tempRoot)
   if (imagesRoot === tempRoot || inside(imagesRoot, tempRoot) || inside(tempRoot, imagesRoot)) throw new Error('Use separate storage roots')
@@ -147,6 +147,6 @@ async function main() {
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => server.close())
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(await fs.realpath(process.argv[1])).href) {
   main().catch(() => { console.error('Media startup failed. Check storage, origin, port and release manifest configuration.'); process.exitCode = 1 })
 }

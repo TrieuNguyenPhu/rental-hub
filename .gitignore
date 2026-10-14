@@ -37,3 +37,5 @@ infra/aws/*.local.*
 server-dist/
 .media/
 !.env.example
+!deploy/env/*.env.example
+.aws-deploy.lock
