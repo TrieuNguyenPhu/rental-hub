@@ -1,10 +1,10 @@
 # Task 2 — VPS Linux độc lập
 
-AWS Task 3 đã hoàn tất và nằm ngoài quy trình này. VPS có IP, filesystem, cấu hình, ảnh và origin riêng; không proxy sang AWS, không dùng bucket AWS để lưu ảnh.
+AWS Task 3 đã hoàn tất và nằm ngoài quy trình này. Task 2 hiện được chạy thử trên EC2 với Terraform riêng; xem [demo EC2](../../infra/ec2/README.md). Tài liệu dưới đây là hướng dẫn nếu triển khai một VPS Linux khác sau này.
 
 ## Điều kiện thực hiện
 
-Chưa có VPS/tài khoản tại thời điểm 2026-10-14. Mọi bước dưới đây là runbook, không phải bằng chứng đã triển khai công khai. Chi phí người dùng cho phép: **0đ**. Chỉ dùng máy chủ được nhà cung cấp xác nhận miễn phí; không mua VPS, nâng cấp tài khoản trả phí hoặc dùng máy chỉ miễn phí trong thời gian trial.
+Chưa có VPS ngoài AWS tại thời điểm 2026-10-14. Các bước dưới đây là runbook VPS, không phải bằng chứng đã triển khai trên nhà cung cấp VPS. EC2 demo dùng AWS Free Plan credit, không phải Always Free VPS.
 
 Oracle có [Always Free compute](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm), nhưng cần tài khoản được xác minh, có thể thiếu capacity và có thể thu hồi máy idle. Người dùng tự hoàn tất đăng ký/xác minh thẻ. Chọn tài nguyên có nhãn Always Free theo quota hiện trên console; không mặc định mọi VM là miễn phí. Ubuntu WSL dùng cho thử nghiệm tại máy, chưa đáp ứng điều kiện VPS public.
 

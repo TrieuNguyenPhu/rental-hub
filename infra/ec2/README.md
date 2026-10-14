@@ -10,7 +10,7 @@ From PowerShell in this directory:
 $env:TF_VAR_admin_cidr = '<your-current-public-IPv4>/32'
 $env:TF_VAR_public_key_path = "$env:USERPROFILE\.ssh\id_ed25519_rental_hub_ec2.pub"
 terraform init
-terraform plan -out=task2.tfplan
+terraform plan '-out=task2.tfplan'
 terraform apply task2.tfplan
 terraform output
 ```
