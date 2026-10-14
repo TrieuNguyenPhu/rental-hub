@@ -35,6 +35,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or $previous -notmatch '^[a-f0-9]{40}$') { throw 'Could not verify the current EC2 release.' }
 
     if (-not $PSCmdlet.ShouldProcess("EC2 $target and CloudFront production", "Deploy main $sha")) { return }
+    & npm ci --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) { throw 'Could not install locked dependencies; production was not changed.' }
     & ssh @sshOptions "git -C /home/ubuntu/rental-hub-source remote set-url origin https://github.com/TrieuNguyenPhu/rental-hub.git && git -C /home/ubuntu/rental-hub-source fetch --quiet origin main && git -C /home/ubuntu/rental-hub-source checkout --quiet --detach $sha && grep -Fxq REPO_URL=/home/ubuntu/rental-hub-source /home/ubuntu/rental-hub-deploy.env && bash /home/ubuntu/rental-hub-source/scripts/deploy.sh $sha /home/ubuntu/rental-hub-deploy.env"
     if ($LASTEXITCODE -ne 0) { throw 'EC2 deployment failed; inspect its release logs.' }
 
