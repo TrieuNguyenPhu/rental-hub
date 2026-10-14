@@ -7,6 +7,7 @@ $global:RentalHubTestFailSmoke = $false
 $global:RentalHubTestBuildFails = $false
 $global:RentalHubTestCopies = 0
 $global:RentalHubTestUploads = 0
+$global:RentalHubTestUploadedIndex = ''
 function global:terraform {
     $global:LASTEXITCODE = 0
     '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
@@ -44,7 +45,10 @@ function global:aws {
         's3api list-objects-v2' { '["index.html","favicon.svg"]' }
         's3 cp' {
             $global:RentalHubTestUploads++
-            if ($a[2] -eq 'dist/index.html') { $global:RentalHubTestActive = 'A' }
+            if ($a[2] -eq 'dist/index.html') {
+                $global:RentalHubTestUploadedIndex = [IO.File]::ReadAllText((Join-Path $fixture 'dist/index.html'))
+                $global:RentalHubTestActive = 'C'
+            }
         }
         default { throw "Unexpected external call: $($a[0..1] -join ' ')" }
     }
@@ -55,14 +59,15 @@ function global:Invoke-WebRequest {
     if ($Uri -match '/assets/') {
         return @{ StatusCode = 200; Content = 'console.log(1)'; Headers = @{ 'Content-Type' = 'application/javascript' } }
     }
-    @{ StatusCode = 200; Content = "<!doctype html><div id=`"root`"></div><script src=`"/assets/$global:RentalHubTestActive.js`"></script>"; Headers = @{ 'Content-Type' = 'text/html' } }
+    $body = if ($global:RentalHubTestActive -eq 'C') { $global:RentalHubTestUploadedIndex } else { "<!doctype html><div id=`"root`"></div><script src=`"/assets/$global:RentalHubTestActive.js`"></script>" }
+    @{ StatusCode = 200; Content = $body; Headers = @{ 'Content-Type' = 'text/html' } }
 }
 function Assert-Equal($actual, $expected, $name) { if ($actual -ne $expected) { throw "$name expected $expected, got $actual" } }
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('rental-hub-aws-test-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path (Join-Path $fixture 'scripts'), (Join-Path $fixture 'dist/assets') | Out-Null
 $deploy = Join-Path $fixture 'scripts/deploy-aws.ps1'
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'deploy-aws.ps1') -Destination $deploy
-[IO.File]::WriteAllText((Join-Path $fixture 'dist/index.html'), '<!doctype html><div id="root"></div><script src="/assets/A.js"></script>')
+[IO.File]::WriteAllText((Join-Path $fixture 'dist/index.html'), '<!doctype html><head></head><div id="root"></div><script src="/assets/A.js"></script>')
 [IO.File]::WriteAllText((Join-Path $fixture 'dist/favicon.svg'), 'changed-file')
 try {
     & $deploy -RollbackVersionId A -Confirm:$false
@@ -84,6 +89,11 @@ try {
     try { & $deploy -Confirm:$false; throw 'Unexpected success' }
     catch { if ($_.Exception.Message -notlike '*Public file changed*') { throw } }
     Assert-Equal $global:RentalHubTestUploads 0 'Changed non-hashed files cannot break rollback'
+    [IO.File]::WriteAllText((Join-Path $fixture 'dist/favicon.svg'), 'old-file')
+    $sha = '1234567890abcdef1234567890abcdef12345678'
+    & $deploy -ReleaseSha $sha -Confirm:$false
+    if ($global:RentalHubTestUploadedIndex -notlike "*<meta name=`"release-sha`" content=`"$sha`">*") { throw 'Release marker missing from uploaded index' }
+    Assert-Equal $global:RentalHubTestActive C 'Release index activated'
     Write-Host 'PASS: AWS rollback, missing asset, recovery and failed build (mock transport; no AWS requests)'
 } finally {
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)
