@@ -29,13 +29,15 @@ test('production serves the expected release, real assets and strict static erro
 test('production uploads building and room images over authenticated TLS', async ({ page, request, baseURL }, testInfo) => {
   test.skip(!process.env.UPLOAD_TEST_USER, 'Upload acceptance needs HTTPS and externally supplied test credentials')
   expect(new URL(baseURL!).protocol).toBe('https:')
-  const unauthenticated = await requestFactory.newContext({ baseURL, httpCredentials: { username: '', password: '' }, ignoreHTTPSErrors: Boolean(testInfo.project.use.ignoreHTTPSErrors) })
+  // Explicitly override Playwright's inherited authenticated project defaults.
+  const unauthenticated = await requestFactory.newContext({ baseURL, httpCredentials: undefined, ignoreHTTPSErrors: Boolean(testInfo.project.use.ignoreHTTPSErrors) })
   try {
     const denied = await unauthenticated.post('/api/images?entityType=building&entityId=qa', { data: Buffer.from('invalid'), headers: { Origin: baseURL! } })
     expect(denied.status()).toBe(401)
   } finally { await unauthenticated.dispose() }
   const wrongOrigin = await request.post('/api/images?entityType=building&entityId=qa', { data: Buffer.from('invalid'), headers: { Origin: 'https://wrong.invalid', 'Content-Type': 'image/jpeg' } })
   expect(wrongOrigin.status()).toBe(403)
+  await page.waitForTimeout(1200)
   const image = { name: 'fixture.jpg', mimeType: 'image/jpeg', buffer: await sharp({ create: { width: 1600, height: 1000, channels: 3, background: '#738a94' } }).jpeg().toBuffer() }
   await createBuilding(page)
   await page.getByRole('button', { name: 'Sửa QA Tower', exact: true }).click()
@@ -49,6 +51,7 @@ test('production uploads building and room images over authenticated TLS', async
   await page.keyboard.press('Escape')
   await page.reload()
   await expect(page.getByRole('img', { name: 'Ảnh QA Tower', exact: true })).toBeVisible()
+  await page.waitForTimeout(1200)
   await createRoom(page)
   await page.getByRole('button', { name: 'Sửa phòng QA-101', exact: true }).click()
   await page.getByLabel('Chọn ảnh').setInputFiles(image)
