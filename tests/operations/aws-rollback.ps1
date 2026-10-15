@@ -9,6 +9,8 @@ $global:RentalHubTestCopies = 0
 $global:RentalHubTestUploads = 0
 $global:RentalHubTestUploadedIndex = ''
 $global:RentalHubTestNetworkFailures = 0
+$global:RentalHubTestFailUpload = $false
+$global:RentalHubTestLambdaUpdates = 0
 $previousDeploymentJson = $env:AWS_DEPLOYMENT_JSON
 function global:terraform {
     $global:LASTEXITCODE = 0
@@ -45,10 +47,12 @@ function global:aws {
         }
         'cloudfront create-invalidation' { 'fixture-invalidation' }
         'cloudfront wait' { }
-        'lambda update-function-code' { '{}' }
+        'lambda get-function' { '{"Code":{"Location":"https://fixture.test/previous-lambda.zip"}}' }
+        'lambda update-function-code' { $global:RentalHubTestLambdaUpdates++; '{}' }
         'lambda wait' { }
         's3api list-objects-v2' { '["index.html","favicon.svg"]' }
         's3 cp' {
+            if ($global:RentalHubTestFailUpload) { $global:LASTEXITCODE = 1; return }
             $global:RentalHubTestUploads++
             if ($a[2] -eq '.local/build/web/index.html') {
                 $global:RentalHubTestUploadedIndex = [IO.File]::ReadAllText((Join-Path $fixture '.local/build/web/index.html'))
@@ -59,7 +63,8 @@ function global:aws {
     }
 }
 function global:Invoke-WebRequest {
-    param($Uri, [switch]$UseBasicParsing, $MaximumRedirection, $TimeoutSec)
+    param($Uri, [switch]$UseBasicParsing, $MaximumRedirection, $TimeoutSec, $OutFile)
+    if ($OutFile) { [IO.File]::WriteAllText($OutFile, 'previous Lambda package'); return }
     if ($global:RentalHubTestNetworkFailures -gt 0) {
         $global:RentalHubTestNetworkFailures--
         throw 'Simulated transient DNS failure'
@@ -103,6 +108,12 @@ try {
     catch { if ($_.Exception.Message -notlike '*Public file changed*') { throw } }
     Assert-Equal $global:RentalHubTestUploads 0 'Changed non-hashed files cannot break rollback'
     [IO.File]::WriteAllText((Join-Path $fixture '.local/build/web/favicon.svg'), 'old-file')
+    $global:RentalHubTestFailUpload = $true
+    try { & $deploy -Confirm:$false; throw 'Unexpected success' }
+    catch { if ($_.Exception.Message -eq 'Unexpected success') { throw } }
+    Assert-Equal $global:RentalHubTestLambdaUpdates 2 'Failed deploy restores previous Lambda package'
+    Assert-Equal $global:RentalHubTestActive B 'Failed upload preserves current index'
+    $global:RentalHubTestFailUpload = $false
     $sha = '1234567890abcdef1234567890abcdef12345678'
     $global:RentalHubTestNetworkFailures = 1
     & $deploy -ReleaseSha $sha -Confirm:$false
@@ -113,7 +124,7 @@ try {
     Remove-Item Function:\terraform
     & $deploy -RollbackVersionId A -Confirm:$false
     Assert-Equal $global:RentalHubTestActive A 'CI config deploys without local Terraform state'
-    Write-Host 'PASS: AWS rollback, missing asset, recovery and failed build (mock transport; no AWS requests)'
+    Write-Host 'PASS: AWS index/Lambda recovery, missing asset and failed build (mock transport; no AWS requests)'
 } finally {
     $env:AWS_DEPLOYMENT_JSON = $previousDeploymentJson
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)

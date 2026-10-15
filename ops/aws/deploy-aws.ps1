@@ -123,20 +123,30 @@ try {
         }
     }
     if (-not $PSCmdlet.ShouldProcess($deployment.DomainName, 'Activate index, invalidate CloudFront and verify (recover on failure)')) { return }
+    $previousLambdaZip = $null
     if (-not $RollbackVersionId) {
         if ((& node -p 'process.platform').Trim() -ne 'linux') { throw 'AWS media package must be deployed from Linux (GitHub Actions).' }
         $mediaZip = Join-Path (Get-Location) '.local/build/aws-media.zip'
         Compress-Archive -Path (Join-Path (Get-Location) '.local/build/aws-media/*') -DestinationPath $mediaZip -Force
-        Invoke-Aws @('lambda', 'update-function-code', '--function-name', $deployment.MediaFunctionName, '--zip-file', "fileb://$mediaZip", '--output', 'json') | Out-Null
-        Invoke-Aws @('lambda', 'wait', 'function-updated', '--function-name', $deployment.MediaFunctionName) | Out-Null
-        $apiResponse = Request-Website "$websiteUrl/api/estate"
-        if ($apiResponse.StatusCode -ne 200 -or -not (($apiResponse.Content | ConvertFrom-Json).data.buildings -is [array])) {
-            throw 'Shared estate API smoke check failed. Index was not switched.'
-        }
+        $previousLambda = (Invoke-Aws @('lambda', 'get-function', '--function-name', $deployment.MediaFunctionName, '--output', 'json')) | ConvertFrom-Json
+        if (-not $previousLambda.Code.Location) { throw 'Previous Lambda package is unavailable. Nothing deployed.' }
+        $previousLambdaZip = Join-Path $temporary 'previous-lambda.zip'
+        Invoke-WebRequest $previousLambda.Code.Location -OutFile $previousLambdaZip -TimeoutSec 60 | Out-Null
+        if ((Get-Item -LiteralPath $previousLambdaZip).Length -eq 0) { throw 'Previous Lambda package is empty. Nothing deployed.' }
     }
     Write-Host "Recovery index VersionId: $($previous.VersionId)"
     $switched = $false
+    $lambdaChanged = $false
     try {
+        if (-not $RollbackVersionId) {
+            $lambdaChanged = $true
+            Invoke-Aws @('lambda', 'update-function-code', '--function-name', $deployment.MediaFunctionName, '--zip-file', "fileb://$mediaZip", '--output', 'json') | Out-Null
+            Invoke-Aws @('lambda', 'wait', 'function-updated', '--function-name', $deployment.MediaFunctionName) | Out-Null
+            $apiResponse = Request-Website "$websiteUrl/api/estate"
+            if ($apiResponse.StatusCode -ne 200 -or -not (($apiResponse.Content | ConvertFrom-Json).data.buildings -is [array])) {
+                throw 'Shared estate API smoke check failed. Index was not switched.'
+            }
+        }
         if ($RollbackVersionId) {
             $switched = $true
             Restore-Index $RollbackVersionId
@@ -154,10 +164,19 @@ try {
         Write-Host "Deployment verified: $websiteUrl"
     } catch {
         $failure = $_
+        $recoveryErrors = @()
         if ($switched) {
             try { Restore-Index $previous.VersionId; Verify-Website $previousIndex; Write-Warning 'Previous index restored and verified' }
-            catch { throw "RECOVERY FAILED. Restore S3 index VersionId $($previous.VersionId). $($_.Exception.Message)" }
+            catch { $recoveryErrors += "index: $($_.Exception.Message)" }
         }
+        if ($lambdaChanged) {
+            try {
+                Invoke-Aws @('lambda', 'update-function-code', '--function-name', $deployment.MediaFunctionName, '--zip-file', "fileb://$previousLambdaZip", '--output', 'json') | Out-Null
+                Invoke-Aws @('lambda', 'wait', 'function-updated', '--function-name', $deployment.MediaFunctionName) | Out-Null
+                Write-Warning 'Previous Lambda package restored'
+            } catch { $recoveryErrors += "Lambda: $($_.Exception.Message)" }
+        }
+        if ($recoveryErrors.Count) { throw "RECOVERY FAILED. Restore S3 index VersionId $($previous.VersionId) and Lambda package manually. $($recoveryErrors -join '; ')" }
         throw $failure
     }
 } finally {
