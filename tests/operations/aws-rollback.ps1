@@ -11,7 +11,7 @@ $global:RentalHubTestUploadedIndex = ''
 $global:RentalHubTestNetworkFailures = 0
 function global:terraform {
     $global:LASTEXITCODE = 0
-    '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
+    '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net","AdminUserPoolId":"fixture","AdminClientId":"fixture","AdminIdentityPoolId":"fixture"}'
 }
 function global:npm { $global:LASTEXITCODE = if ($global:RentalHubTestBuildFails) { 1 } else { 0 } }
 function global:aws {
@@ -71,7 +71,7 @@ function Assert-Equal($actual, $expected, $name) { if ($actual -ne $expected) { 
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('rental-hub-aws-test-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path (Join-Path $fixture 'ops/aws'), (Join-Path $fixture '.local/build/web/assets') | Out-Null
 $deploy = Join-Path $fixture 'ops/aws/deploy-aws.ps1'
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'deploy-aws.ps1') -Destination $deploy
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../../ops/aws/deploy-aws.ps1') -Destination $deploy
 [IO.File]::WriteAllText((Join-Path $fixture '.local/build/web/index.html'), '<!doctype html><head></head><div id="root"></div><script src="/assets/A.js"></script>')
 [IO.File]::WriteAllText((Join-Path $fixture '.local/build/web/favicon.svg'), 'changed-file')
 try {
