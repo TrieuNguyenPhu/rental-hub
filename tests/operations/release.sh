@@ -58,12 +58,12 @@ elif [[ $1 == run ]]; then
   [[ ! -f fail-build ]] || exit 1
   if [[ $2 == build ]]; then
     sha=$(git rev-parse HEAD)
-    mkdir -p dist/assets
-    printf 'console.log("%s")' "$sha" > "dist/assets/$sha.js"
-    printf '<!doctype html><div id="root"></div><script type="module" src="/assets/%s.js"></script>' "$sha" > dist/index.html
+    mkdir -p .local/build/web/assets
+    printf 'console.log("%s")' "$sha" > ".local/build/web/assets/$sha.js"
+    printf '<!doctype html><div id="root"></div><script type="module" src="/assets/%s.js"></script>' "$sha" > .local/build/web/index.html
   elif [[ $2 == build:media ]]; then
-    mkdir -p server-dist/server
-    cp media.js server-dist/server/main.js
+    mkdir -p .local/build/media/apps/media/src
+    cp media.js .local/build/media/apps/media/src/main.js
   fi
 fi
 EOF
