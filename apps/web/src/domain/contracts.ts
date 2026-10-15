@@ -14,4 +14,9 @@ export interface EstatePersistence {
   reset: () => void
 }
 
-export type UploadImage = (file: File, entityType: EntityType, entityId: string, signal: AbortSignal) => Promise<ImageAsset>
+export type UploadImage = (
+  file: File,
+  entityType: EntityType,
+  entityId: string,
+  signal: AbortSignal,
+) => Promise<ImageAsset>

@@ -15,7 +15,8 @@ export function createEstateStore(persistence: EstatePersistence) {
       return { ok: true, id }
     }
     return {
-      ...(persistence.initialData ?? createDemoData()), storageWarning: persistence.storageWarning,
+      ...(persistence.initialData ?? createDemoData()),
+      storageWarning: persistence.storageWarning,
       ...createEstateActions(get, commit, persistence),
     }
   })
@@ -24,7 +25,12 @@ export function createEstateStore(persistence: EstatePersistence) {
     if (store.getState().storageWarning !== warning) store.setState({ storageWarning: warning })
   }
   store.subscribe((state, previous) => {
-    if (state.buildings !== previous.buildings || state.rooms !== previous.rooms || state.bookings !== previous.bookings) persistData()
+    if (
+      state.buildings !== previous.buildings ||
+      state.rooms !== previous.rooms ||
+      state.bookings !== previous.bookings
+    )
+      persistData()
   })
   if (persistence.fresh) persistData()
   return store
