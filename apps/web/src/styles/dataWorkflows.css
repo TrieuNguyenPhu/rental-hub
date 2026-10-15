@@ -1,0 +1,45 @@
+.data-page .page-heading { margin-bottom: 30px; }
+.data-page .panel { border-color: #dce5ec; box-shadow: 0 8px 24px #14283f08; }
+.data-page .table-toolbar { padding: 20px 22px; gap: 10px; }
+.data-page .search-input { max-width: 390px; }
+.data-page .search-input input,
+.data-page .table-toolbar > select {
+  min-height: 44px;
+  border-color: #cedbe5;
+  border-radius: 8px;
+  background: #fff;
+  color: #23394e;
+  font-size: 12px;
+}
+.data-page .search-input input:focus,
+.data-page .table-toolbar > select:focus { border-color: #3b80b9; }
+.data-page .result-count { color: #4b6075; font-size: 11px; font-weight: 600; }
+.data-page .table-scroll:focus-visible { outline: 3px solid #6a97f1; outline-offset: -3px; }
+.data-page table { font-size: 12px; }
+.data-page th { padding: 16px 22px; background: #f7f9fb; color: #53677a; font-size: 11px; font-weight: 600; }
+.data-page td { padding: 17px 22px; color: #33485d; }
+.data-page tbody tr:hover { background: #f6f9fc; }
+.data-page td strong { color: #192f46; font-size: 12px; }
+.data-page .cell-subtitle { font-size: 11px; }
+.data-page .entity-icon { width: 42px; height: 42px; border-radius: 9px; }
+.data-page .badge { font-size: 10px; font-weight: 600; padding: 7px 10px; }
+.data-page .row-actions .icon-button { width: 40px; height: 40px; }
+.data-page .table-footer { padding: 17px 22px; font-size: 11px; }
+.data-page .empty-state { padding: 70px 24px; }
+.data-page .modal { border-color: #dce5ec; box-shadow: 0 24px 72px #11283f38; }
+.data-page .modal-header { padding: 22px 24px; }
+.data-page .modal-header h2 { font-size: 18px; }
+.data-page .form-hint { font-size: 11px; }
+.data-page .form-grid label { font-size: 12px; }
+.data-page .field-hint { font-size: 11px; }
+.data-page .form-grid input,
+.data-page .form-grid select { min-height: 44px; font-size: 12px; }
+.data-page .modal-footer { padding: 18px 24px; }
+
+@media (max-width: 767px) {
+  .data-page .table-toolbar { padding: 16px; }
+  .data-page .table-toolbar > select { flex: 1 1 150px; }
+  .data-page .result-count { flex-basis: 100%; margin-left: 0; }
+  .data-page th, .data-page td { padding-left: 16px; padding-right: 16px; }
+  .data-page .table-footer { padding: 16px; }
+}

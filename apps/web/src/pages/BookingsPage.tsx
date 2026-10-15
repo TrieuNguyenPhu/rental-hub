@@ -40,7 +40,7 @@ export function BookingsPage() {
     )
     .sort((a, b) => b.checkIn.localeCompare(a.checkIn))
   return (
-    <>
+    <div className="data-page">
       <PageHeading
         title="Lịch đặt phòng"
         subtitle="Quản lý khách hàng, thời gian lưu trú và lịch sử đặt phòng."
@@ -73,7 +73,7 @@ export function BookingsPage() {
           <span className="result-count">{filtered.length} lịch đặt</span>
         </div>
         {filtered.length ? (
-          <div className="table-scroll">
+          <div className="table-scroll" tabIndex={0} role="region" aria-label="Bảng lịch đặt">
             <table>
               <thead>
                 <tr>
@@ -167,6 +167,6 @@ export function BookingsPage() {
           }}
         />
       )}
-    </>
+    </div>
   )
 }

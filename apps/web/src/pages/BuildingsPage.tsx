@@ -27,7 +27,7 @@ export function BuildingsPage() {
     item.name.toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi')),
   )
   return (
-    <>
+    <div className="data-page">
       <PageHeading
         title="Tòa nhà"
         subtitle="Quản lý thông tin và trạng thái các tòa nhà của bạn."
@@ -43,7 +43,7 @@ export function BuildingsPage() {
           </span>
         </div>
         {filtered.length ? (
-          <div className="table-scroll">
+          <div className="table-scroll" tabIndex={0} role="region" aria-label="Bảng tòa nhà">
             <table>
               <thead>
                 <tr>
@@ -135,6 +135,6 @@ export function BuildingsPage() {
           }}
         />
       )}
-    </>
+    </div>
   )
 }
