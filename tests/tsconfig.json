@@ -13,5 +13,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["./**/*.ts", "../apps/media/src/**/*.ts", "../apps/web/vite.config.ts"]
+  "include": ["./**/*.ts", "../apps/media/src/**/*.ts", "../apps/aws-media/src/**/*.ts", "../apps/web/vite.config.ts"]
 }

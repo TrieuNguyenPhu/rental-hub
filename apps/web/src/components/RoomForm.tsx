@@ -14,7 +14,7 @@ export function RoomForm({
   room?: Room
   buildings: Building[]
   onClose: () => void
-  onSave: (input: RoomInput) => ActionResult
+  onSave: (input: RoomInput) => ActionResult | Promise<ActionResult>
 }) {
   const { estateStore } = useServices()
   // Chỉ lựa chọn tòa nhà cần state vì gợi ý số tầng đổi ngay khi người dùng chọn.
@@ -113,10 +113,10 @@ export function RoomForm({
           entityType="room"
           entityId={saved.id}
           images={saved.images}
-          onChange={(images) => {
+          onChange={async (images) => {
             const current = estateStore.getState().rooms.find((item) => item.id === saved.id)
             if (!current) throw new Error('Phòng không còn tồn tại.')
-            const result = estateStore.getState().updateRoom(saved.id, { ...current, images })
+            const result = await estateStore.getState().updateRoom(saved.id, { ...current, images })
             if (!result.ok) throw new Error(result.error)
           }}
         />

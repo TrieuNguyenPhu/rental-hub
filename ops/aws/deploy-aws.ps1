@@ -20,7 +20,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Terraform outputs unavailable. Run terraform init, plan and apply first.' }
         $deployment = ($terraformOutput -join "`n") | ConvertFrom-Json
     }
-    foreach ($field in @('AccountId', 'Region', 'WebsiteBucket', 'DistributionId', 'DomainName')) {
+    foreach ($field in @('AccountId', 'Region', 'WebsiteBucket', 'DistributionId', 'DomainName', 'MediaFunctionName')) {
         if (-not $deployment.$field) { throw "Deployment config is missing $field" }
     }
     function Invoke-Aws([string[]]$AwsArguments) {
@@ -34,8 +34,10 @@ try {
     Invoke-Aws @('s3api', 'head-bucket', '--bucket', $deployment.WebsiteBucket, '--expected-bucket-owner', $deployment.AccountId) | Out-Null
     $distributionJson = Invoke-Aws @('cloudfront', 'get-distribution', '--id', $deployment.DistributionId, '--output', 'json')
     $distribution = ($distributionJson -join "`n") | ConvertFrom-Json
+    $s3Origin = @($distribution.Distribution.DistributionConfig.Origins.Items | Where-Object Id -eq 'private-s3')
     if ($distribution.Distribution.DomainName -ne $deployment.DomainName -or
-        $distribution.Distribution.DistributionConfig.Origins.Items[0].DomainName -ne "$($deployment.WebsiteBucket).s3.$($deployment.Region).amazonaws.com") {
+        $s3Origin.Count -ne 1 -or
+        $s3Origin[0].DomainName -ne "$($deployment.WebsiteBucket).s3.$($deployment.Region).amazonaws.com") {
         throw 'CloudFront origin/domain does not match Terraform outputs'
     }
 
@@ -93,7 +95,7 @@ try {
         }
     } else {
         $env:VITE_STATIC_HOSTING = 'true'
-        foreach ($gate in @('lint', 'test', 'build')) {
+        foreach ($gate in @('lint', 'test', 'build', 'build:aws-media')) {
             & npm run $gate
             if ($LASTEXITCODE -ne 0) { throw "Quality gate failed: $gate. Nothing uploaded." }
         }
@@ -121,6 +123,17 @@ try {
         }
     }
     if (-not $PSCmdlet.ShouldProcess($deployment.DomainName, 'Activate index, invalidate CloudFront and verify (recover on failure)')) { return }
+    if (-not $RollbackVersionId) {
+        if ((& node -p 'process.platform').Trim() -ne 'linux') { throw 'AWS media package must be deployed from Linux (GitHub Actions).' }
+        $mediaZip = Join-Path (Get-Location) '.local/build/aws-media.zip'
+        Compress-Archive -Path (Join-Path (Get-Location) '.local/build/aws-media/*') -DestinationPath $mediaZip -Force
+        Invoke-Aws @('lambda', 'update-function-code', '--function-name', $deployment.MediaFunctionName, '--zip-file', "fileb://$mediaZip", '--output', 'json') | Out-Null
+        Invoke-Aws @('lambda', 'wait', 'function-updated', '--function-name', $deployment.MediaFunctionName) | Out-Null
+        $apiResponse = Request-Website "$websiteUrl/api/estate"
+        if ($apiResponse.StatusCode -ne 200 -or -not (($apiResponse.Content | ConvertFrom-Json).data.buildings -is [array])) {
+            throw 'Shared estate API smoke check failed. Index was not switched.'
+        }
+    }
     Write-Host "Recovery index VersionId: $($previous.VersionId)"
     $switched = $false
     try {

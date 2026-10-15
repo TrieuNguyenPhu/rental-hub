@@ -8,6 +8,18 @@ mock_provider "aws" {
   mock_resource "aws_cloudfront_distribution" {
     defaults = { arn = "arn:aws:cloudfront::287872994400:distribution/MOCKCF" }
   }
+  mock_resource "aws_iam_role" {
+    defaults = { arn = "arn:aws:iam::287872994400:role/mock-media" }
+  }
+  mock_resource "aws_lambda_function" {
+    defaults = { invoke_arn = "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:287872994400:function:mock-media/invocations" }
+  }
+  mock_resource "aws_apigatewayv2_api" {
+    defaults = {
+      execution_arn = "arn:aws:execute-api:ap-southeast-2:287872994400:mock-api"
+      api_endpoint  = "https://mock-api.execute-api.ap-southeast-2.amazonaws.com"
+    }
+  }
 }
 
 mock_provider "aws" {

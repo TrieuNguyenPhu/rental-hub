@@ -2,6 +2,11 @@ variable "prefix" {
   type = string
 }
 
+variable "api_origin_domain" {
+  type    = string
+  default = null
+}
+
 variable "website_bucket" {
   type = object({ id = string, arn = string, bucket_regional_domain_name = string })
 }

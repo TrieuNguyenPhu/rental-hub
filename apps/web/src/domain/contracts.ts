@@ -1,4 +1,9 @@
-import type { EntityType, EstateData, ImageAsset } from '../../../../packages/domain/models.ts'
+import type { ActionResult, EntityType, EstateData, ImageAsset } from '../../../../packages/domain/models.ts'
+import type { EstateActions } from './estateActions.ts'
+
+export type SharedEstateState = EstateData & { storageWarning: string | null } & {
+  [K in keyof EstateActions]: K extends 'exportData' ? EstateActions[K] : (...args: Parameters<EstateActions[K]>) => ActionResult | Promise<ActionResult>
+}
 
 export interface EstateStorage {
   getItem: (name: string) => string | null

@@ -12,9 +12,10 @@ $global:RentalHubTestNetworkFailures = 0
 $previousDeploymentJson = $env:AWS_DEPLOYMENT_JSON
 function global:terraform {
     $global:LASTEXITCODE = 0
-    '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
+    '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net","MediaFunctionName":"fixture-media"}'
 }
 function global:npm { $global:LASTEXITCODE = if ($global:RentalHubTestBuildFails) { 1 } else { 0 } }
+function global:node { if ($args[0] -eq '-p') { 'linux' } else { throw 'Unexpected node call' } }
 function global:aws {
     $global:LASTEXITCODE = 0
     $a = @($args)
@@ -23,7 +24,7 @@ function global:aws {
         'sts get-caller-identity' { '000000000000' }
         's3api head-bucket' { }
         's3api get-bucket-versioning' { '{"Status":"Enabled"}' }
-        'cloudfront get-distribution' { '{"Distribution":{"DomainName":"fixture.cloudfront.net","DistributionConfig":{"Origins":{"Items":[{"DomainName":"fixture.s3.test-region.amazonaws.com"}]}}}}' }
+        'cloudfront get-distribution' { '{"Distribution":{"DomainName":"fixture.cloudfront.net","DistributionConfig":{"Origins":{"Items":[{"Id":"media-api","DomainName":"fixture.execute-api.test-region.amazonaws.com"},{"Id":"private-s3","DomainName":"fixture.s3.test-region.amazonaws.com"}]}}}}' }
         's3api head-object' {
             if ((ValueAfter '--key') -eq 'index.html') { "{`"VersionId`":`"$global:RentalHubTestActive`"}" }
             elseif ($global:RentalHubTestMissingAsset) { $global:LASTEXITCODE = 1 }
@@ -44,6 +45,8 @@ function global:aws {
         }
         'cloudfront create-invalidation' { 'fixture-invalidation' }
         'cloudfront wait' { }
+        'lambda update-function-code' { '{}' }
+        'lambda wait' { }
         's3api list-objects-v2' { '["index.html","favicon.svg"]' }
         's3 cp' {
             $global:RentalHubTestUploads++
@@ -62,6 +65,9 @@ function global:Invoke-WebRequest {
         throw 'Simulated transient DNS failure'
     }
     if ($global:RentalHubTestFailSmoke -and $global:RentalHubTestActive -eq 'A') { throw 'Simulated failed activation' }
+    if ($Uri -match '/api/estate$') {
+        return @{ StatusCode = 200; Content = '{"data":{"buildings":[],"rooms":[],"bookings":[]},"version":null}'; Headers = @{ 'Content-Type' = 'application/json' } }
+    }
     if ($Uri -match '/assets/') {
         return @{ StatusCode = 200; Content = 'console.log(1)'; Headers = @{ 'Content-Type' = 'application/javascript' } }
     }
@@ -70,11 +76,12 @@ function global:Invoke-WebRequest {
 }
 function Assert-Equal($actual, $expected, $name) { if ($actual -ne $expected) { throw "$name expected $expected, got $actual" } }
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('rental-hub-aws-test-' + [guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path (Join-Path $fixture 'ops/aws'), (Join-Path $fixture '.local/build/web/assets') | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $fixture 'ops/aws'), (Join-Path $fixture '.local/build/web/assets'), (Join-Path $fixture '.local/build/aws-media') | Out-Null
 $deploy = Join-Path $fixture 'ops/aws/deploy-aws.ps1'
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../../ops/aws/deploy-aws.ps1') -Destination $deploy
 [IO.File]::WriteAllText((Join-Path $fixture '.local/build/web/index.html'), '<!doctype html><head></head><div id="root"></div><script src="/assets/A.js"></script>')
 [IO.File]::WriteAllText((Join-Path $fixture '.local/build/web/favicon.svg'), 'changed-file')
+[IO.File]::WriteAllText((Join-Path $fixture '.local/build/aws-media/index.mjs'), 'export async function handler() {}')
 try {
     & $deploy -RollbackVersionId A -Confirm:$false
     Assert-Equal $global:RentalHubTestActive A 'Rollback restores the requested index'
@@ -102,7 +109,7 @@ try {
     Assert-Equal $global:RentalHubTestNetworkFailures 0 'Transient DNS failure retried'
     if ($global:RentalHubTestUploadedIndex -notlike "*<meta name=`"release-sha`" content=`"$sha`">*") { throw 'Release marker missing from uploaded index' }
     Assert-Equal $global:RentalHubTestActive C 'Release index activated'
-    $env:AWS_DEPLOYMENT_JSON = '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
+    $env:AWS_DEPLOYMENT_JSON = '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net","MediaFunctionName":"fixture-media"}'
     Remove-Item Function:\terraform
     & $deploy -RollbackVersionId A -Confirm:$false
     Assert-Equal $global:RentalHubTestActive A 'CI config deploys without local Terraform state'
@@ -112,5 +119,5 @@ try {
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)
     $fixturePrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar + 'rental-hub-aws-test-'
     if ($resolvedFixture.StartsWith($fixturePrefix, [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -LiteralPath $resolvedFixture -Recurse -Force }
-    Remove-Item Function:\terraform, Function:\npm, Function:\aws, Function:\Invoke-WebRequest -ErrorAction SilentlyContinue
+    Remove-Item Function:\terraform, Function:\npm, Function:\node, Function:\aws, Function:\Invoke-WebRequest -ErrorAction SilentlyContinue
 }

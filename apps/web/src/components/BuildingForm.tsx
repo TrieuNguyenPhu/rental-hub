@@ -11,7 +11,7 @@ export function BuildingForm({
 }: {
   building?: Building
   onClose: () => void
-  onSave: (input: BuildingInput) => ActionResult
+  onSave: (input: BuildingInput) => ActionResult | Promise<ActionResult>
 }) {
   const { estateStore } = useServices()
   const saved = useEstateStore((state) => state.buildings.find((item) => item.id === building?.id))
@@ -75,10 +75,10 @@ export function BuildingForm({
           entityType="building"
           entityId={saved.id}
           images={saved.images}
-          onChange={(images) => {
+          onChange={async (images) => {
             const current = estateStore.getState().buildings.find((item) => item.id === saved.id)
             if (!current) throw new Error('Tòa nhà không còn tồn tại.')
-            const result = estateStore.getState().updateBuilding(saved.id, { ...current, images })
+            const result = await estateStore.getState().updateBuilding(saved.id, { ...current, images })
             if (!result.ok) throw new Error(result.error)
           }}
         />

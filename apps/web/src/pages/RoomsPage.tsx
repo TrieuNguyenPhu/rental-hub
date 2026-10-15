@@ -141,8 +141,8 @@ export function RoomsPage() {
           room={editing === 'new' ? undefined : editing}
           buildings={buildings}
           onClose={() => setEditing(null)}
-          onSave={(input) => {
-            const result = editing === 'new' ? addRoom(input) : updateRoom(editing.id, input)
+          onSave={async (input) => {
+            const result = editing === 'new' ? await addRoom(input) : await updateRoom(editing.id, input)
             if (result.ok) {
               setMessage(editing === 'new' ? 'Đã thêm phòng.' : 'Đã cập nhật phòng.')
               setEditing(null)
@@ -156,8 +156,8 @@ export function RoomsPage() {
           title="Xóa phòng?"
           description={`Bạn muốn xóa phòng ${deleting.roomNumber}? Phòng có booking, kể cả đã hủy, sẽ được giữ lại để bảo toàn lịch sử.`}
           onClose={() => setDeleting(null)}
-          onConfirm={() => {
-            const result = deleteRoom(deleting.id)
+          onConfirm={async () => {
+            const result = await deleteRoom(deleting.id)
             if (result.ok) {
               setMessage('Đã xóa phòng.')
               setDeleting(null)

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Building2 } from 'lucide-react'
-import { useEstateStore } from '../AppContext'
+import { useEstateStore, useServices } from '../AppContext'
 import type { Building } from '../../../../packages/domain/models.ts'
 import { BuildingForm } from '../components/BuildingForm'
 import { Badge } from '../components/Badge'
@@ -14,6 +14,7 @@ import {
 } from '../components/PageParts'
 
 export function BuildingsPage() {
+  const { sharedData } = useServices()
   const buildings = useEstateStore((state) => state.buildings)
   const rooms = useEstateStore((state) => state.rooms)
   const addBuilding = useEstateStore((state) => state.addBuilding)
@@ -103,15 +104,15 @@ export function BuildingsPage() {
               : 'Thêm tòa nhà đầu tiên để bắt đầu quản lý phòng.'}
           </EmptyState>
         )}
-        <div className="table-footer">Danh sách tòa nhà · Dữ liệu lưu trên trình duyệt</div>
+        <div className="table-footer">Danh sách tòa nhà · {sharedData ? 'Dữ liệu chung trên AWS' : 'Dữ liệu lưu trên trình duyệt'}</div>
       </section>
       {editing && (
         <BuildingForm
           building={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
-          onSave={(input) => {
+          onSave={async (input) => {
             const result =
-              editing === 'new' ? addBuilding(input) : updateBuilding(editing.id, input)
+              editing === 'new' ? await addBuilding(input) : await updateBuilding(editing.id, input)
             if (result.ok) {
               setMessage(editing === 'new' ? 'Đã thêm tòa nhà.' : 'Đã cập nhật tòa nhà.')
               setEditing(null)
@@ -125,8 +126,8 @@ export function BuildingsPage() {
           title="Xóa tòa nhà?"
           description={`Bạn muốn xóa “${deleting.name}”? Chỉ có thể xóa tòa nhà không còn phòng liên kết.`}
           onClose={() => setDeleting(null)}
-          onConfirm={() => {
-            const result = deleteBuilding(deleting.id)
+          onConfirm={async () => {
+            const result = await deleteBuilding(deleting.id)
             if (result.ok) {
               setMessage('Đã xóa tòa nhà.')
               setDeleting(null)

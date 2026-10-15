@@ -2,7 +2,7 @@
 
 Giải thích các khái niệm React, Hooks và cấu trúc mã nguồn: [React trong bài EstateFlow](docs/react-learning.md).
 
-Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt, không có database. Local/VPS upload ảnh qua API Node/Sharp; bản AWS dùng S3/CloudFront và không hỗ trợ upload ảnh mới. Font được lưu trong `apps/web/public/fonts/`.
+Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần. Local/VPS lưu CRUD trong trình duyệt và upload ảnh qua API Node/Sharp. Bản AWS dùng S3/CloudFront, API Gateway và Lambda để lưu dữ liệu chung và tải ảnh WebP lên S3. Font được lưu trong `apps/web/public/fonts/`.
 
 ## Cài đặt và chạy local
 
@@ -21,7 +21,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 
 ## Production build
 
-Task 2/4/5: xem [VPS độc lập](docs/deploy/vps.md), [deploy/rollback](docs/deploy/releases.md), [runbook sự cố](docs/runbook/troubleshooting.md) và [nghiệm thu](docs/acceptance/demo.md). AWS Task 3 giữ nguyên kiến trúc đã hoàn thành. Các template/script VPS đã chuẩn bị; chưa có VPS public để nghiệm thu thực tế.
+Task 2/4/5: xem [VPS độc lập](docs/deploy/vps.md), [deploy/rollback](docs/deploy/releases.md), [runbook sự cố](docs/runbook/troubleshooting.md) và [nghiệm thu](docs/acceptance/demo.md). AWS Task 3 dùng thêm API để hỗ trợ ảnh và dữ liệu chung. Các template/script VPS đã chuẩn bị; chưa có VPS public để nghiệm thu thực tế.
 
 ```bash
 npm run build
@@ -138,7 +138,7 @@ PLAYWRIGHT_CHANNEL=chromium npm run test:e2e
 
 ## Tài liệu tham khảo
 
-Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md), [giới hạn ảnh trên bản AWS](docs/task3-static-images.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
+Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md), [ảnh và dữ liệu chung](docs/task3-static-images.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
 
 - [Vite](https://vite.dev/guide/)
 - [Zustand persist](https://zustand.docs.pmnd.rs/reference/integrations/persisting-store-data)
@@ -148,7 +148,7 @@ Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và ro
 
 Copy `.env.example` sang `.env`, chạy `npm run dev:media` trong một terminal và `npm run dev -- --host 127.0.0.1 --port 5173 --strictPort` trong terminal khác. Origin phải đúng `http://127.0.0.1:5173`; nếu dùng host/port khác, đổi `SITE_ORIGIN` tương ứng. Production preview local dùng `npm run build` rồi `npm run preview -- --host 127.0.0.1 --port 5173 --strictPort` cùng service media.
 
-Lưu tòa nhà/phòng trước, mở chỉnh sửa rồi chọn ảnh. JPEG/PNG/WebP tĩnh, tối đa 10 MiB/20 MP, rộng sau EXIF từ 1200px. Server tạo WebP chất lượng 80, rộng 600/1200, giữ tỷ lệ và loại metadata. Ảnh được liên kết ngay sau upload; nút Đóng form không hoàn tác ảnh đã liên kết. UI tối đa 5 ảnh/entity; bỏ ảnh chỉ gỡ liên kết, không xóa file. Ảnh public; metadata riêng theo browser/origin.
+Lưu tòa nhà/phòng trước, mở chỉnh sửa rồi chọn ảnh. JPEG/PNG/WebP tĩnh, tối đa 10 MiB local/VPS hoặc 4 MiB AWS, 20 MP, rộng sau EXIF từ 1200px. Server tạo WebP chất lượng 80, rộng 600/1200, giữ tỷ lệ và loại metadata. Ảnh được liên kết ngay sau upload; nút Đóng form không hoàn tác ảnh đã liên kết. UI tối đa 5 ảnh/entity; bỏ ảnh chỉ gỡ liên kết, không xóa file. Bản AWS chia sẻ cả ảnh và dữ liệu với mọi người truy cập; chỉ nhập dữ liệu giả.
 
 Dev lưu files trong `.local/media/` (ngoài Git), Vite proxy `/api` và `/images` tới `127.0.0.1:3001`. `npm run build:media` tạo `.local/build/media/apps/media/src/main.js` (release đóng gói entry thành `server-dist/server/main.js`); `npm run start:media` chạy entry production với environment do service cung cấp. Production bắt buộc roots tuyệt đối tồn tại, cùng filesystem, ngoài release; `SITE_ORIGIN` HTTPS, `release.json` có full SHA ở release chứa `server-dist/`. Default mode là production. Media bind loopback; Nginx phải cung cấp HTTPS + Basic Auth cho upload, body/rate limits và static `/images/`. Không đưa secrets vào `VITE_*` hoặc Git. Candidate dùng `MEDIA_READ_ONLY=true`, không upload hoặc dọn temp production.
 
