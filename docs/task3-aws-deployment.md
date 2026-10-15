@@ -1,6 +1,6 @@
 # Task 3 — AWS S3 private + CloudFront bằng Terraform
 
-Ngày triển khai: 13/10/2026. Account: `287872994400`. Region mặc định AWS CLI và hai bucket: `ap-southeast-2` (Sydney).
+Triển khai frontend ban đầu: 13/10/2026. Bổ sung ảnh và dữ liệu chung: 15/10/2026. Account: `287872994400`. Region: `ap-southeast-2` (Sydney).
 
 Trạng thái: **Task 3 hoàn thành**. Đã chạy lại script deploy sau khi dọn code và xác minh bản production qua URL AWS. Task 2 (VPS) và diễn tập rollback của Task 4 nằm ngoài lần nghiệm thu này.
 
@@ -9,7 +9,11 @@ Website: **https://d2pqq5rtvfmo3w.cloudfront.net**. CloudFront distribution: `E1
 ## Kiến trúc thực tế
 
 ```text
-Browser --HTTPS--> CloudFront --HTTPS + OAC--> S3 website private
+Browser --HTTPS--> CloudFront --HTTPS + OAC--> S3 website private (React + WebP)
+                       |
+                       +-- /api/* --> API Gateway HTTP API --> Lambda (Sharp + CRUD)
+                                                          |--> S3 data private (estate.json)
+                                                          +--> S3 website (images/*)
                        |
                        +--> CloudWatch metrics (us-east-1)
                        +--> standard access logs v2 --> S3 logs private (Sydney)
@@ -17,7 +21,8 @@ Browser --HTTPS--> CloudFront --HTTPS + OAC--> S3 website private
 
 | Tài nguyên | Giá trị |
 | --- | --- |
-| Website bucket | `npt-room-finder-prod-website-287872994400` |
+| Website bucket (frontend và ảnh) | `npt-room-finder-prod-website-287872994400` |
+| Data bucket (CRUD chung) | `npt-room-finder-prod-data-287872994400` |
 | Logs bucket | `npt-room-finder-prod-logs-287872994400` |
 | OAC | `E2QYLDZS7M2BPH` |
 | Cache policy | `6e278f8a-ebf8-4f23-b12c-758c95b38759` |
@@ -25,7 +30,7 @@ Browser --HTTPS--> CloudFront --HTTPS + OAC--> S3 website private
 | Log delivery destination | `npt-room-finder-prod-s3` |
 | Log delivery ID | `utz99FTIsl7CARbF` |
 
-Dùng S3 REST origin, không bật S3 website hosting. Cả hai bucket bật toàn bộ Block Public Access, BucketOwnerEnforced và SSE-S3 (AES256). Website bucket bật Versioning; không có lifecycle xóa website. Bucket policy chỉ cấp quyền đọc object cho đúng CloudFront distribution qua OAC, và từ chối HTTP. Principal logs chỉ được ghi vào prefix của account, có ràng buộc source account và source ARN.
+Dùng S3 REST origin, không bật S3 website hosting. Website và logs bucket chặn public access, BucketOwnerEnforced và SSE-S3 (AES256); data bucket cũng chặn public access, mã hóa SSE-S3 và bật Versioning. Website bucket bật Versioning; không có lifecycle xóa website. Bucket policy website chỉ cấp quyền đọc object cho đúng CloudFront distribution qua OAC, và từ chối HTTP. Principal logs chỉ được ghi vào prefix của account, có ràng buộc source account và source ARN.
 
 CloudFront redirect HTTP sang HTTPS, dùng certificate mặc định và hostname `cloudfront.net`. Không tạo Route 53 hoặc ACM. Distribution dùng toàn bộ edge locations, bật compression, HTTP/2 và HTTP/3, cùng managed SecurityHeadersPolicy.
 
@@ -33,11 +38,11 @@ SPA theo sơ đồ: custom error 403 và 404 trả `/index.html` với HTTP 200,
 
 **Giới hạn fallback:** file tĩnh không tồn tại cũng trả HTML 200. Khi debug lỗi JS/CSS, kiểm tra Content-Type và đường dẫn asset. Có thể chuyển sang viewer-request rewrite khi cần phân biệt lỗi file tĩnh với route SPA; chưa thêm CloudFront Function trong task này.
 
-CRUD vẫn lưu ở localStorage theo browser/origin. Dữ liệu ở localhost/VPS không tự chuyển sang domain CloudFront; sử dụng dữ liệu demo khi đánh giá.
+CRUD trên AWS dùng API và `estate.json` trong data bucket riêng. ETag + S3 conditional write chống ghi đè khi hai người cùng sửa. Ảnh tải lên S3 website và được CloudFront phục vụ dưới `/images/`. Mọi người truy cập đều xem và sửa dữ liệu/ảnh; đây là demo không xác thực, chỉ nhập dữ liệu giả. Localhost/VPS vẫn dùng localStorage và không tự chuyển dữ liệu lên AWS. Xem [luồng ảnh và dữ liệu](task3-static-images.md).
 
 ## Cấu trúc Terraform
 
-Hạ tầng được quản lý bằng **Terraform** trong `infra/aws/`: `main.tf` nối ba module `storage`, `cdn`, `logging`; `monitoring.tf` cấu hình S3 request metrics, CloudWatch alarm và SNS topic policy; `locals.tf` chứa cấu hình chung; `versions.tf` cấu hình provider; `outputs.tf` trả URL và thông tin cho script deploy. `moved.tf` giữ ánh xạ còn áp dụng từ địa chỉ tài nguyên cũ; xem [cấu trúc](architecture.md). Provider AWS chính dùng Sydney, provider alias `logs` dùng `us-east-1`; policy của S3 logs bucket dùng provider Sydney trong module logging. Provider giới hạn account `287872994400`; `.terraform.lock.hcl` khóa phiên bản AWS provider. Không chứa credential; Terraform và AWS CLI dùng credential/profile đã đăng nhập trên máy.
+Hạ tầng được quản lý bằng **Terraform** trong `infra/aws/`: `main.tf` nối `storage`, `cdn`, `logging`, `shared/media`; `monitoring.tf` cấu hình S3 request metrics, CloudWatch alarm và SNS topic policy; `locals.tf` chứa cấu hình chung; `versions.tf` cấu hình provider; `outputs.tf` trả URL và thông tin cho script deploy. `moved.tf` giữ ánh xạ còn áp dụng từ địa chỉ tài nguyên cũ; xem [cấu trúc](architecture.md). Provider AWS chính dùng Sydney, provider alias `logs` dùng `us-east-1`; policy của S3 logs bucket dùng provider Sydney trong module logging. Provider giới hạn account `287872994400`; `.terraform.lock.hcl` khóa phiên bản AWS provider. Không chứa credential; Terraform và AWS CLI dùng credential/profile đã đăng nhập trên máy.
 
 Các tài nguyên đã tạo được import vào Terraform, không tạo lại bucket/distribution hoặc thay URL. `imports.tf.example` lưu các import block để phục hồi state nếu cần. Đây là cấu hình cho account và website này, không phải module nhiều môi trường.
 
@@ -88,14 +93,14 @@ Import blocks giữ ngoài cấu hình thường dùng để mocked tests không
 
 ## Build và deploy lại
 
-Chạy từ thư mục repository với Node.js 24, npm, PowerShell, Terraform và AWS CLI v2; Terraform state phải có outputs:
+Build/deploy Lambda cần Linux x86_64, Node.js 24, npm, PowerShell Core và AWS CLI v2. CI chạy trên Ubuntu và deploy staging khi push `develop`; production đợi reviewer approve. Terraform state hoặc `AWS_DEPLOYMENT_JSON` phải chứa `MediaFunctionName`. Có thể deploy thủ công trên Linux:
 
 ```powershell
 aws sts get-caller-identity
-powershell -NoProfile -ExecutionPolicy Bypass -File ops/aws/deploy-aws.ps1
+pwsh ./ops/aws/deploy-aws.ps1 -Confirm:$false
 ```
 
-Script lấy resource identifiers từ Terraform outputs, kiểm tra đúng account, bucket owner và CloudFront origin; chạy lint, unit tests và production build (bao gồm typecheck). Bất kỳ lệnh lỗi nào cũng dừng triển khai. Nếu build thất bại, script chưa upload file. Asset mới upload trước, giữ asset hash cũ, index upload cuối cùng; không dùng `sync --delete`. Script đợi distribution/invalidation, so sánh HTML của bốn route với bản build, và kiểm tra MIME type JavaScript.
+Script lấy resource identifiers từ Terraform outputs, kiểm tra đúng account, bucket owner và CloudFront origin; chạy lint, unit tests, frontend build và Lambda build. Bất kỳ lệnh lỗi nào cũng dừng triển khai. Nếu build thất bại, script chưa upload file. Script cập nhật Lambda và kiểm tra GET `/api/estate` trước khi upload assets; asset mới upload trước, giữ asset hash cũ, index upload cuối cùng; không dùng `sync --delete`. Script đợi distribution/invalidation, so sánh HTML của bốn route với bản build, và kiểm tra MIME type JavaScript.
 
 Xem trước với `-WhatIf`: vẫn chạy quality gates và đọc AWS identity/config, nhưng không upload/invalidate.
 
@@ -106,7 +111,7 @@ npm run test:e2e
 Remove-Item Env:PLAYWRIGHT_BASE_URL
 ```
 
-Playwright dùng browser context riêng; các thao tác CRUD thử nghiệm chỉ ghi localStorage của context đó. Nếu distribution mới tạo chưa resolve DNS trên máy, đợi DNS cập nhật rồi chạy lại; deployment status và invalidation completion không đảm bảo DNS cache của mọi máy đã cập nhật.
+Playwright trên AWS tạo dữ liệu thử rồi xóa tòa nhà/phòng sau test; ảnh đã tải lên có thể còn trong S3 vì thao tác xóa metadata chỉ gỡ liên kết. Dùng staging cho test ghi dữ liệu. Nếu distribution mới tạo chưa resolve DNS trên máy, đợi DNS cập nhật rồi chạy lại; deployment status và invalidation completion không đảm bảo DNS cache của mọi máy đã cập nhật.
 
 ## Logs, metrics và lifecycle
 

@@ -11,6 +11,7 @@ output "deployment" {
     LogsBucket              = module.storage.buckets["logs"].id
     DistributionId          = module.cdn.distribution.id
     DomainName              = module.cdn.distribution.domain_name
+    MediaFunctionName       = module.media.function_name
     OriginAccessControlId   = module.cdn.origin_access_control.id
     CachePolicyId           = module.cdn.cache_policy.id
     LogsDeliverySource      = module.logging.source.name

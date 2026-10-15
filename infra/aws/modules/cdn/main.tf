@@ -34,6 +34,19 @@ resource "aws_cloudfront_distribution" "website" {
     domain_name              = var.website_bucket.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.website.id
   }
+  dynamic "origin" {
+    for_each = var.api_origin_domain == null ? [] : [var.api_origin_domain]
+    content {
+      origin_id   = "media-api"
+      domain_name = origin.value
+      custom_origin_config {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
+  }
   default_cache_behavior {
     target_origin_id           = "private-s3"
     viewer_protocol_policy     = "redirect-to-https"
@@ -42,6 +55,19 @@ resource "aws_cloudfront_distribution" "website" {
     compress                   = true
     cache_policy_id            = aws_cloudfront_cache_policy.website.id
     response_headers_policy_id = "67f7725c-6f97-4210-82d7-5512b31e9d03" # AWS managed SecurityHeadersPolicy.
+  }
+  dynamic "ordered_cache_behavior" {
+    for_each = var.api_origin_domain == null ? [] : [var.api_origin_domain]
+    content {
+      path_pattern             = "/api/*"
+      target_origin_id         = "media-api"
+      viewer_protocol_policy   = "https-only"
+      allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
+      cached_methods           = ["GET", "HEAD"]
+      compress                 = false
+      cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS managed CachingDisabled.
+      origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # AWS managed AllViewerExceptHostHeader.
+    }
   }
   dynamic "custom_error_response" {
     for_each = toset([403, 404])

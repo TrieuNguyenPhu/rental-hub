@@ -29,6 +29,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:media
+      - run: npm run build:aws-media
       - run: npm audit --omit=dev --audit-level=high
 
   operations:

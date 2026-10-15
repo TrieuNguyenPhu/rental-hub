@@ -1,7 +1,9 @@
-# Ảnh trên bản AWS tĩnh
+# Ảnh và dữ liệu chung trên AWS
 
-Sau khi bỏ Cognito, bản AWS chỉ chạy React build trên S3 private qua CloudFront. Không có dịch vụ ghi ảnh từ trình duyệt. `ImageUploader` vẫn hiển thị ảnh đã được lưu trong metadata nhưng ẩn input upload khi `uploadImage` là `null`. Local/VPS tiếp tục dùng media API Node/Sharp để tải ảnh.
+CloudFront phục vụ React build và ảnh WebP từ S3 website bucket riêng của staging/production. Route `/api/*` chuyển tới API Gateway HTTP API và Lambda Node.js 24. Lambda kiểm tra entity, MIME, kích thước tối đa 4 MiB và nội dung ảnh; Sharp tạo hai bản 600/1200 px WebP chất lượng 80, bỏ metadata rồi ghi `images/{building|room}-image/{entityId}/{imageId}/{timestamp}-{uuid}_{size}.webp` lên S3. Ảnh được gắn vào metadata bằng một thao tác CRUD tiếp theo. Gỡ ảnh trong giao diện chỉ gỡ liên kết; ảnh không được xóa vật lý.
 
-CRUD trên bản AWS lưu ở `localStorage` của từng trình duyệt. Không có đăng nhập hoặc dữ liệu dùng chung; bất kỳ ai mở website cũng có thể thay đổi dữ liệu trong trình duyệt của chính họ. Ảnh đã nằm trong S3 vẫn được CloudFront phân phối, nhưng ảnh không được tự đồng bộ giữa các máy vì metadata không có backend.
+Lambda lưu tòa nhà, phòng và lịch đặt trong `estate.json` ở **data bucket riêng, chặn truy cập công khai và bật versioning**. GET trả snapshot và ETag. POST gửi action, input và ETag; Lambda áp dụng cùng quy tắc nghiệp vụ với bản local, dùng S3 conditional write để tránh ghi đè thay đổi đồng thời. Khi hai người cùng sửa, người đến sau nhận 409 và dữ liệu mới; họ cần thử lại. Tải lại trang sẽ đọc dữ liệu chung từ AWS.
 
-Deploy bằng `ops/aws/deploy-aws.ps1`, script đặt `VITE_STATIC_HOSTING=true` khi build. Script lấy bucket/distribution từ Terraform outputs, upload asset trước `index.html`, kiểm tra các route và có thể rollback index theo VersionId. Xem [hướng dẫn triển khai](task3-aws-deployment.md).
+Đây là **demo công khai không xác thực**: bất kỳ người truy cập nào cũng xem, thêm, sửa, xóa dữ liệu và tải ảnh. Lịch đặt chứa tên/số điện thoại; chỉ dùng dữ liệu giả. API Gateway giới hạn trung bình 2 request/giây, burst 10; Lambda concurrency 2. Không dùng cho dữ liệu thật trước khi thêm đăng nhập, phân quyền và giới hạn lưu trữ.
+
+Local/VPS vẫn lưu CRUD trong localStorage và dùng media API Node/Sharp, tối đa 10 MiB. Dữ liệu local cũ không tự chuyển lên AWS. Deploy AWS build Lambda trên Linux rồi upload assets web trước `index.html`; script kiểm tra API trước khi chuyển index. Rollback hiện khôi phục `index.html` từ S3 VersionId; dữ liệu chung và ảnh giữ nguyên.

@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useEstateStore } from '../AppContext'
+import { useEstateStore, useServices } from '../AppContext'
 import { ConfirmDialog } from './ConfirmDialog'
 import { SuccessNotice } from './PageParts'
 
@@ -23,6 +23,7 @@ const navigation = [
 ]
 
 export function Layout() {
+  const { sharedData } = useServices()
   const [menuOpen, setMenuOpen] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
   const [message, setMessage] = useState('')
@@ -88,8 +89,8 @@ export function Layout() {
           <div className="local-note">
             <Database size={19} />
             <div>
-              <strong>Không gian local</strong>
-              <p>Dữ liệu trên trình duyệt này</p>
+              <strong>{sharedData ? 'Demo công khai' : 'Không gian local'}</strong>
+              <p>{sharedData ? 'Mọi người cùng thấy dữ liệu và ảnh' : 'Dữ liệu trên trình duyệt này'}</p>
             </div>
           </div>
           <button className="reset-button export-button" onClick={downloadData}>
@@ -127,10 +128,11 @@ export function Layout() {
           </div>
           <span className="workspace-label">
             <span />
-            Dữ liệu trên thiết bị này
+            {sharedData ? 'Dữ liệu chung trên AWS' : 'Dữ liệu trên thiết bị này'}
           </span>
         </header>
         <main id="main-content" tabIndex={-1}>
+          {sharedData && <div className="notice info" role="note">Demo công khai: mọi người đều xem và sửa cùng dữ liệu, gồm tên và số điện thoại trong lịch đặt. Chỉ nhập dữ liệu giả.</div>}
           <SuccessNotice message={message} />
           {storageWarning && (
             <div className="notice error" role="alert">
@@ -141,17 +143,17 @@ export function Layout() {
         </main>
         <footer className="app-footer">
           <span>EstateFlow · Quản lý bất động sản</span>
-          <span>Dữ liệu được lưu trên trình duyệt này</span>
+          <span>{sharedData ? 'Demo công khai · Chỉ nhập thông tin giả' : 'Dữ liệu được lưu trên trình duyệt này'}</span>
         </footer>
       </div>
       {resetOpen && (
         <ConfirmDialog
           title="Khôi phục dữ liệu demo?"
           label="Khôi phục demo"
-          description="Toàn bộ dữ liệu hiện tại trên trình duyệt này sẽ được thay bằng 3 tòa nhà, 12 phòng và 7 lịch đặt demo. Thao tác này không thể hoàn tác."
+          description={sharedData ? 'Dữ liệu chung của tất cả người truy cập sẽ được thay bằng dữ liệu demo. Thao tác này không thể hoàn tác.' : 'Toàn bộ dữ liệu hiện tại trên trình duyệt này sẽ được thay bằng 3 tòa nhà, 12 phòng và 7 lịch đặt demo. Thao tác này không thể hoàn tác.'}
           onClose={() => setResetOpen(false)}
-          onConfirm={() => {
-            const result = resetDemoData()
+          onConfirm={async () => {
+            const result = await resetDemoData()
             if (result.ok) {
               setMessage('Đã khôi phục dữ liệu demo.')
               setResetOpen(false)

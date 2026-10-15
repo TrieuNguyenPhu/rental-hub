@@ -1,10 +1,13 @@
 import { createContext, useContext } from 'react'
 import type { UploadImage } from './domain/contracts.ts'
-import type { createEstateStore, EstateState } from './store.ts'
+import type { UseBoundStore, StoreApi } from 'zustand'
+import type { SharedEstateState } from './domain/contracts.ts'
 
 export interface AppServices {
-  estateStore: ReturnType<typeof createEstateStore>
+  estateStore: UseBoundStore<StoreApi<SharedEstateState>>
   uploadImage: UploadImage | null
+  maxImageBytes?: number
+  sharedData?: boolean
 }
 
 const ServicesContext = createContext<AppServices | null>(null)
@@ -18,7 +21,7 @@ export function useServices() {
   return services
 }
 
-export function useEstateStore<T>(selector: (state: EstateState) => T): T {
+export function useEstateStore<T>(selector: (state: SharedEstateState) => T): T {
   // Selector chỉ đăng ký phần dữ liệu mà component thực sự đọc.
   return useServices().estateStore(selector)
 }

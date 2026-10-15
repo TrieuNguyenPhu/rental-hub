@@ -13,9 +13,9 @@ export function ImageUploader({
   entityType: EntityType
   entityId: string
   images: ImageAsset[]
-  onChange: (images: ImageAsset[]) => void
+  onChange: (images: ImageAsset[]) => void | Promise<void>
 }) {
-  const { uploadImage } = useServices()
+  const { uploadImage, maxImageBytes = 10 * 1024 * 1024 } = useServices()
   const inputId = useId()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -33,8 +33,8 @@ export function ImageUploader({
       setError('Chọn ảnh JPEG, PNG hoặc WebP tĩnh.')
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Ảnh phải nhỏ hơn hoặc bằng 10 MiB.')
+    if (file.size > maxImageBytes) {
+      setError(`Ảnh phải nhỏ hơn hoặc bằng ${maxImageBytes / 1024 / 1024} MiB.`)
       return
     }
     setBusy(true)
@@ -45,7 +45,7 @@ export function ImageUploader({
       if (upload.signal.aborted) return
       const uploaded = [asset]
       if (!validImages(uploaded)) throw new Error('Phản hồi ảnh không hợp lệ. Vui lòng thử lại.')
-      onChange([...images, ...uploaded])
+      await onChange([...images, ...uploaded])
     } catch (failure) {
       if (upload.signal.aborted) return
       setError(
@@ -78,12 +78,12 @@ export function ImageUploader({
             onChange={handleFileChange}
           />
           <p id={`${inputId}-hint`} className="field-hint">
-            JPEG, PNG, WebP tĩnh · tối đa 10 MiB, 20 MP · rộng từ 1200px. Bản 1200px cao tối đa
+            JPEG, PNG, WebP tĩnh · tối đa {maxImageBytes / 1024 / 1024} MiB, 20 MP · rộng từ 1200px. Bản 1200px cao tối đa
             16383px. Ảnh được lưu ngay; bỏ ảnh chỉ gỡ liên kết.
           </p>
         </>
       ) : (
-        <p className="field-hint">Bản AWS chỉ hiển thị ảnh đã có; không hỗ trợ tải ảnh mới.</p>
+        <p className="field-hint">Không thể tải ảnh ở môi trường này.</p>
       )}
       {busy && (
         <p role="status" className="field-hint">
@@ -124,13 +124,14 @@ export function ImageUploader({
               className="button secondary"
               disabled={busy}
               aria-label={`Bỏ ảnh ${index + 1}`}
-              onClick={() => {
+              onClick={async () => {
                 try {
-                  onChange(images.filter((item) => item.id !== image.id))
+                  setBusy(true)
+                  await onChange(images.filter((item) => item.id !== image.id))
                   setError('')
                 } catch (failure) {
                   setError(failure instanceof Error ? failure.message : 'Không thể bỏ ảnh.')
-                }
+                } finally { setBusy(false) }
               }}
             >
               Bỏ ảnh
