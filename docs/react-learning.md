@@ -2,6 +2,12 @@
 
 Tài liệu này nối các khái niệm React với mã nguồn đang chạy. React dựng giao diện; TypeScript mô tả dữ liệu; Zustand giữ dữ liệu dùng chung; các hàm trong `domain/` kiểm tra quy tắc nghiệp vụ. Không cần dùng đủ mọi Hook để hoàn thành bài.
 
+## Đọc code từ đâu?
+
+Đọc `main.tsx` → `App.tsx` → một trang trong `pages/` → form tương ứng trong `components/` → `store.ts` → `domain/estateActions.ts`. Ví dụ, khi thêm phòng: `RoomsPage` mở `RoomForm`; form nhận dữ liệu và hàm `onSave` qua props; `FormPanel` tạo `FormData` khi người dùng bấm Lưu; trang gọi `addRoom`; action kiểm tra dữ liệu rồi store cập nhật. Các component theo dõi danh sách phòng sẽ render lại.
+
+Trong mỗi component, đọc theo thứ tự: **props → Hooks/state → dữ liệu tính từ state → hàm xử lý sự kiện → JSX**. Các chú thích trong `RoomForm`, `FormPanel`, `Modal`, `ImageUploader`, `AppContext` và `BookingsPage` đánh dấu những quyết định React dễ gây nhầm lẫn. JSX đã được xuống dòng theo cấu trúc thẻ để thấy rõ component cha, con và nhánh hiển thị.
+
 ## Khái niệm cơ bản
 
 | Khái niệm | Cách hoạt động | Áp dụng trong bài và lý do |
@@ -38,6 +44,8 @@ Hook được gọi ở đầu component hoặc custom Hook, theo cùng thứ t�
 5. Khi submit, trang gọi action của store. `domain/validation.ts` và `domain/estateActions.ts` kiểm tra rồi cập nhật dữ liệu bất biến. `store.ts` lưu thay đổi qua persistence; component đang theo dõi phần dữ liệu đó render lại.
 
 Form dùng `FormData` cho phần lớn trường chỉ cần đọc lúc submit. Riêng `RoomForm` dùng `useState` cho tòa nhà được chọn vì giới hạn tầng và gợi ý cần đổi ngay khi người dùng chọn tòa nhà. Bộ lọc được tính trực tiếp trong render: đây là dữ liệu dẫn xuất, không cần `useEffect` hay một state thứ hai. `Modal` dùng effect/ref vì `<dialog>` và focus là API của trình duyệt nằm ngoài JSX.
+
+Ví dụ trong `BookingsPage`, `query` là state vì người dùng có thể sửa nó. `filtered` là phép tính từ `bookings`, `status` và `query`, nên không cần setter riêng. Nút Hủy là event handler mở `ConfirmDialog`; hộp thoại chỉ tồn tại khi `cancelling` có giá trị. Đây là bốn khái niệm cùng hoạt động: state, event, props và conditional rendering.
 
 ## Vai trò thư mục và file chính
 
