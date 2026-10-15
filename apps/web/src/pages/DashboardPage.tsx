@@ -6,7 +6,6 @@ import { BookingCustomerCell, BookingRoomCell } from '../components/BookingDetai
 import { EmptyState, PageHeading } from '../components/PageParts'
 import { dateLabel } from '../utils/format'
 import { localDate } from '../domain/dates'
-import '../styles/dashboard.css'
 
 export function DashboardPage() {
   const buildings = useEstateStore((state) => state.buildings)
