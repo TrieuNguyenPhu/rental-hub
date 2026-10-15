@@ -16,7 +16,7 @@ export default defineConfig({
   testIgnore: process.env.SITE_URL ? ['**/images.spec.ts'] : ['**/production.spec.ts'],
   fullyParallel: true,
   use: {
-    baseURL, headless: true, screenshot: 'only-on-failure', trace: uploadUser || process.env.AWS_ADMIN_CREDENTIAL_FILE ? 'off' : 'retain-on-failure',
+    baseURL, headless: true, screenshot: 'only-on-failure', trace: uploadUser ? 'off' : 'retain-on-failure',
     httpCredentials: uploadUser && uploadPassword ? { username: uploadUser, password: uploadPassword, origin: origin.origin } : undefined,
     // Self-signed TLS is only permitted for the explicit local integration fixture.
     ignoreHTTPSErrors: process.env.LOCAL_TLS_TEST === '1' && loopback,

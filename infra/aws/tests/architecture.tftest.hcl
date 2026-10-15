@@ -22,16 +22,13 @@ run "private_spa_with_separate_logs" {
 
   assert {
     condition = (
-      module.admin.user_pool.admin_create_user_config[0].allow_admin_create_user_only &&
-      module.admin.user_pool.password_policy[0].minimum_length == 16 &&
-      module.admin.user_pool.deletion_protection == "ACTIVE" &&
-      !module.admin.client.generate_secret &&
-      !module.admin.identity_pool.allow_unauthenticated_identities &&
-      jsondecode(module.admin.upload_policy.policy).Statement[0].Action == "s3:PutObject" &&
-      jsondecode(module.admin.upload_policy.policy).Statement[0].Resource == "${module.storage.buckets["website"].arn}/images/*" &&
-      one(module.admin.cors.cors_rule).allowed_origins == toset(["https://${module.cdn.distribution.domain_name}"])
+      aws_s3_bucket_metric.website.bucket == module.storage.buckets["website"].id &&
+      aws_cloudwatch_metric_alarm.website_s3_5xx.metric_name == "5xxErrors" &&
+      aws_cloudwatch_metric_alarm.website_s3_5xx.dimensions.FilterId == "EntireBucket" &&
+      aws_cloudwatch_metric_alarm.website_s3_5xx.alarm_actions == toset([local.alert_topic_arn]) &&
+      jsondecode(aws_sns_topic_policy.alerts.policy).Statement[1].Principal.Service == "cloudwatch.amazonaws.com"
     )
-    error_message = "Admin access must require authentication and restrict uploads to images from the site origin."
+    error_message = "Website S3 errors must notify the existing SNS topic."
   }
 
   assert {

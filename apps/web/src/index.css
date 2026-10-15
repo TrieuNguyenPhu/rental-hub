@@ -15,9 +15,6 @@
 }
 * { box-sizing: border-box; }
 .image-uploader { border-top: 1px solid var(--line); padding-top: 16px; min-width: 0; }
-.admin-login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-.admin-login form { width: min(420px, 100%); padding: 32px; display: grid; gap: 14px; }
-.admin-login label { font-size: 12px; font-weight: 600; }
 .image-upload-heading { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-size: 12px; }
 .image-upload-heading span { color: var(--muted); }
 .image-uploader label { display: block; margin-bottom: 8px; font-size: 12px; }

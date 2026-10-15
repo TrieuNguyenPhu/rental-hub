@@ -68,38 +68,3 @@ moved {
   from = aws_cloudwatch_log_delivery.website
   to   = module.logging.aws_cloudwatch_log_delivery.website
 }
-
-moved {
-  from = aws_cognito_user_pool.admin
-  to   = module.admin.aws_cognito_user_pool.admin
-}
-
-moved {
-  from = aws_cognito_user_pool_client.admin
-  to   = module.admin.aws_cognito_user_pool_client.admin
-}
-
-moved {
-  from = aws_cognito_identity_pool.admin
-  to   = module.admin.aws_cognito_identity_pool.admin
-}
-
-moved {
-  from = aws_iam_role.admin_upload
-  to   = module.admin.aws_iam_role.admin_upload
-}
-
-moved {
-  from = aws_iam_role_policy.admin_upload
-  to   = module.admin.aws_iam_role_policy.admin_upload
-}
-
-moved {
-  from = aws_cognito_identity_pool_roles_attachment.admin
-  to   = module.admin.aws_cognito_identity_pool_roles_attachment.admin
-}
-
-moved {
-  from = aws_s3_bucket_cors_configuration.website_upload
-  to   = module.admin.aws_s3_bucket_cors_configuration.website_upload
-}

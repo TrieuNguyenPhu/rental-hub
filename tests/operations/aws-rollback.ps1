@@ -11,7 +11,7 @@ $global:RentalHubTestUploadedIndex = ''
 $global:RentalHubTestNetworkFailures = 0
 function global:terraform {
     $global:LASTEXITCODE = 0
-    '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net","AdminUserPoolId":"fixture","AdminClientId":"fixture","AdminIdentityPoolId":"fixture"}'
+    '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
 }
 function global:npm { $global:LASTEXITCODE = if ($global:RentalHubTestBuildFails) { 1 } else { 0 } }
 function global:aws {

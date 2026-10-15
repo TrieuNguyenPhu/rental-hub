@@ -15,5 +15,7 @@ locals {
     Resource  = ["arn:aws:s3:::${name}", "arn:aws:s3:::${name}/*"]
     Condition = { Bool = { "aws:SecureTransport" = "false" } }
   } }
-  log_source_arn = "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:delivery-source:${local.prefix}"
+  log_source_arn  = "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:delivery-source:${local.prefix}"
+  alert_topic_arn = "arn:aws:sns:${local.region}:${data.aws_caller_identity.current.account_id}:my_topic"
+  s3_alarm_name   = "${local.prefix}-s3-5xx"
 }

@@ -10,7 +10,7 @@ Tài liệu này nối các khái niệm React với mã nguồn đang chạy. R
 | Props | Dữ liệu cha truyền xuống con trong mỗi lần render; component con không sửa props. | `BookingForm` nhận `rooms`, `buildings`, `onSave`, `onClose`; các cell booking nhận dữ liệu cần hiển thị. Callback trong props cho phép component dùng lại mà không chứa nghiệp vụ riêng của từng trang. |
 | State | Dữ liệu React ghi nhớ giữa các lần render; gọi hàm cập nhật sẽ yêu cầu render lại. | `query`, `status`, `editing` thuộc từng trang vì chỉ trang đó cần. Danh sách tòa nhà, phòng, booking ở Zustand vì nhiều trang cùng đọc và thay đổi. Danh sách đã lọc được tính từ state khi render, không lưu thêm một bản state dễ lệch. |
 | Event handling | Truyền hàm cho `onClick`, `onChange`, `onSubmit` để xử lý hành động người dùng. | `SearchInput` chuyển giá trị nhập lên trang; `FormPanel` đọc `FormData` khi submit; trang gọi action và xử lý kết quả. Validation cuối cùng nằm trong `domain/`, không phụ thuộc vào sự kiện UI. |
-| Conditional rendering | Dùng `if`, `? :`, `&&` để chọn phần JSX cần hiện. | Trang danh sách hiện bảng hoặc `EmptyState`; `AwsAdminGate` hiện đăng nhập hoặc nội dung; modal chỉ được tạo khi có đối tượng đang sửa/xóa. |
+| Conditional rendering | Dùng `if`, `? :`, `&&` để chọn phần JSX cần hiện. | Trang danh sách hiện bảng hoặc `EmptyState`; `ImageUploader` chỉ hiện nút tải ảnh khi có upload adapter; modal chỉ được tạo khi có đối tượng đang sửa/xóa. |
 
 ## Hooks
 
@@ -18,10 +18,10 @@ Hook được gọi ở đầu component hoặc custom Hook, theo cùng thứ t�
 
 | Hook | Chức năng, cách hoạt động | Khi phù hợp | Trong bài |
 | --- | --- | --- | --- |
-| `useState` | Giữ giá trị riêng của một instance component; setter yêu cầu React render lại với giá trị mới. | Giá trị input, bộ lọc, dialog, trạng thái gửi form. | Các trang dùng cho tìm kiếm/bộ lọc/modal; `AwsAdminGate` dùng cho trạng thái đăng nhập; `ImageUploader` dùng cho tiến trình và lỗi. |
+| `useState` | Giữ giá trị riêng của một instance component; setter yêu cầu React render lại với giá trị mới. | Giá trị input, bộ lọc, dialog, trạng thái gửi form. | Các trang dùng cho tìm kiếm/bộ lọc/modal; `ImageUploader` dùng cho tiến trình và lỗi. |
 | `useEffect` | Chạy sau khi React cập nhật giao diện để đồng bộ với hệ thống ngoài React; hàm trả về dùng để dọn dẹp trước lần chạy tiếp theo hoặc khi unmount. | Kết nối API, DOM, timer, subscription cần setup/cleanup. | `Modal` gọi `showModal`, đóng dialog và trả focus; `ImageUploader` hủy upload khi unmount. Không dùng effect để lọc danh sách hay xử lý cú nhấp chuột. |
 | `useRef` | Giữ cùng một đối tượng qua các lần render; thay đổi `.current` không gây render. | Giữ DOM node hoặc handle của tác vụ ngoài React. | `Modal` giữ tham chiếu `<dialog>`; `ImageUploader` giữ `AbortController` để hủy request. |
-| `useContext` | Đọc giá trị từ provider gần nhất và render lại khi giá trị context đổi. | Truyền dependency dùng rộng mà không chuyển props qua nhiều lớp trung gian. | `useServices` đọc store, phiên admin và hàm upload từ `ServicesProvider`. Dữ liệu danh sách được theo dõi qua selector của Zustand, không sao chép vào context. |
+| `useContext` | Đọc giá trị từ provider gần nhất và render lại khi giá trị context đổi. | Truyền dependency dùng rộng mà không chuyển props qua nhiều lớp trung gian. | `useServices` đọc store và hàm upload từ `ServicesProvider`. Dữ liệu danh sách được theo dõi qua selector của Zustand, không sao chép vào context. |
 | `useMemo` | Giữ kết quả phép tính giữa các lần render cho đến khi dependency đổi. | Phép tính thật sự tốn kém hoặc cần giữ tham chiếu cho component đã tối ưu. | Chưa dùng: các danh sách của MVP nhỏ, phép lọc trực tiếp dễ hiểu hơn; chỉ thêm sau khi đo thấy render chậm. |
 | `useCallback` | Giữ cùng tham chiếu hàm giữa các lần render cho đến khi dependency đổi. | Truyền callback cho component được `memo` hoặc dùng callback làm dependency ổn định của Hook khác. | Chưa dùng: các handler hiện ngắn và component con chưa cần tối ưu theo tham chiếu. |
 | `useReducer` | Giữ state và cập nhật bằng `dispatch(action)` qua một hàm reducer. | State cục bộ có nhiều chuyển trạng thái liên quan, ví dụ form nhiều bước với các nhánh chuyển trạng thái rõ ràng. | Chưa dùng: state cục bộ hiện độc lập; nghiệp vụ CRUD đã ở domain và Zustand. Thêm reducer lúc này sẽ lặp logic. |
@@ -31,7 +31,7 @@ Hook được gọi ở đầu component hoặc custom Hook, theo cùng thứ t�
 
 ## Luồng chạy và lựa chọn triển khai
 
-1. `main.tsx` tạo persistence, Zustand store, admin và upload adapter rồi truyền qua `App`.
+1. `main.tsx` tạo persistence và Zustand store; bản local/VPS dùng HTTP upload, bản AWS tắt upload rồi truyền các adapter qua `App`.
 2. `App.tsx` đặt `ServicesProvider`, router chọn trang; `Layout` hiển thị điều hướng và `<Outlet>`.
 3. Trang đọc dữ liệu qua `useEstateStore(selector)`. Selector chọn riêng `buildings`, `rooms`, `bookings` hoặc action, nên một thay đổi không liên quan không bắt trang render lại chỉ vì đã chọn toàn bộ store.
 4. Trang truyền dữ liệu và callback qua props cho form, dialog và các component hiển thị. Phần khách/phòng của booking được dùng chung giữa hai bảng; mỗi trang vẫn quyết định dữ liệu và thao tác của mình.
@@ -44,13 +44,13 @@ Form dùng `FormData` cho phần lớn trường chỉ cần đọc lúc submit.
 | Nơi | Vai trò |
 | --- | --- |
 | `apps/web/src/main.tsx` | Điểm khởi tạo ứng dụng và nối adapter thật. |
-| `apps/web/src/App.tsx` | Provider, routes, cổng đăng nhập admin tùy cấu hình. |
+| `apps/web/src/App.tsx` | Provider và routes. |
 | `apps/web/src/AppContext.ts` | Context và custom Hooks `useServices`, `useEstateStore`. |
 | `apps/web/src/store.ts` | Zustand state, actions và lưu dữ liệu khi danh sách đổi. |
 | `apps/web/src/pages/` | Bốn màn hình: `DashboardPage` tổng quan, `BuildingsPage` quản lý tòa nhà, `RoomsPage` quản lý phòng, `BookingsPage` quản lý lịch. Trang giữ state UI và nối sự kiện với actions. |
 | `apps/web/src/components/` | Các phần giao diện dùng lại: `Layout`, form, `Modal`, `ConfirmDialog`, `ImageUploader`, `Badge`, các phần trang trong `PageParts.tsx` và cell trong `BookingDetails.tsx`. |
 | `apps/web/src/domain/` | Quy tắc ngày, kiểm tra dữ liệu, chồng lịch, actions CRUD, dữ liệu demo và hợp đồng với adapter. Không chứa React. |
-| `apps/web/src/services/` | Adapter localStorage, AWS Cognito/S3 và HTTP upload ảnh. |
+| `apps/web/src/services/` | Adapter localStorage và HTTP upload ảnh. |
 | `apps/web/src/utils/` | Định dạng ngày/tiền và đọc trường `FormData`; không chứa state. |
 | `apps/web/src/index.css`, `fonts.css`, `public/` | Giao diện CSS và tài nguyên tĩnh. |
 | `packages/domain/models.ts` | Kiểu dữ liệu dùng chung giữa web và media. |

@@ -2,7 +2,7 @@
 
 Giải thích các khái niệm React, Hooks và cấu trúc mã nguồn: [React trong bài EstateFlow](docs/react-learning.md).
 
-Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt, không có database. Local/VPS upload ảnh qua API Node/Sharp; AWS dùng Cognito Admin và S3. Font được lưu trong `apps/web/public/fonts/`.
+Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt, không có database. Local/VPS upload ảnh qua API Node/Sharp; bản AWS dùng S3/CloudFront và không hỗ trợ upload ảnh mới. Font được lưu trong `apps/web/public/fonts/`.
 
 ## Cài đặt và chạy local
 
@@ -66,7 +66,7 @@ packages/
   domain/models.ts      # Shared data types
 infra/aws/              # Terraform root module and AWS modules
 ops/
-  aws/                  # AWS deployment and admin setup
+  aws/                  # AWS deployment and rollback
   deploy/               # VPS, Nginx and systemd templates
   release/              # VPS build, deploy, rollback and smoke checks
 tests/
@@ -138,7 +138,7 @@ PLAYWRIGHT_CHANNEL=chromium npm run test:e2e
 
 ## Tài liệu tham khảo
 
-Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md), [đăng nhập Admin Cognito và tải ảnh S3](docs/task3-admin-images.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
+Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md), [giới hạn ảnh trên bản AWS](docs/task3-static-images.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
 
 - [Vite](https://vite.dev/guide/)
 - [Zustand persist](https://zustand.docs.pmnd.rs/reference/integrations/persisting-store-data)
