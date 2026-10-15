@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useEstateStore } from '../AppContext'
-import '../styles/dataWorkflows.css'
 
 export function PageHeading({
   title,
