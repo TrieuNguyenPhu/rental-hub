@@ -9,6 +9,7 @@ $global:RentalHubTestCopies = 0
 $global:RentalHubTestUploads = 0
 $global:RentalHubTestUploadedIndex = ''
 $global:RentalHubTestNetworkFailures = 0
+$previousDeploymentJson = $env:AWS_DEPLOYMENT_JSON
 function global:terraform {
     $global:LASTEXITCODE = 0
     '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
@@ -101,10 +102,15 @@ try {
     Assert-Equal $global:RentalHubTestNetworkFailures 0 'Transient DNS failure retried'
     if ($global:RentalHubTestUploadedIndex -notlike "*<meta name=`"release-sha`" content=`"$sha`">*") { throw 'Release marker missing from uploaded index' }
     Assert-Equal $global:RentalHubTestActive C 'Release index activated'
+    $env:AWS_DEPLOYMENT_JSON = '{"Region":"test-region","AccountId":"000000000000","WebsiteBucket":"fixture","DistributionId":"fixture","DomainName":"fixture.cloudfront.net"}'
+    Remove-Item Function:\terraform
+    & $deploy -RollbackVersionId A -Confirm:$false
+    Assert-Equal $global:RentalHubTestActive A 'CI config deploys without local Terraform state'
     Write-Host 'PASS: AWS rollback, missing asset, recovery and failed build (mock transport; no AWS requests)'
 } finally {
+    $env:AWS_DEPLOYMENT_JSON = $previousDeploymentJson
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)
     $fixturePrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar + 'rental-hub-aws-test-'
     if ($resolvedFixture.StartsWith($fixturePrefix, [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -LiteralPath $resolvedFixture -Recurse -Force }
-    Remove-Item Function:\terraform, Function:\npm, Function:\aws, Function:\Invoke-WebRequest
+    Remove-Item Function:\terraform, Function:\npm, Function:\aws, Function:\Invoke-WebRequest -ErrorAction SilentlyContinue
 }
