@@ -16,8 +16,7 @@ output "deployment" {
     LogsDeliverySource      = module.logging.source.name
     LogsDeliveryDestination = module.logging.destination.name
     LogsDeliveryId          = module.logging.delivery.id
-    AdminUserPoolId         = module.admin.user_pool.id
-    AdminClientId           = module.admin.client.id
-    AdminIdentityPoolId     = module.admin.identity_pool.id
+    AlertTopicArn           = local.alert_topic_arn
+    S3ErrorAlarmName        = aws_cloudwatch_metric_alarm.website_s3_5xx.alarm_name
   }
 }

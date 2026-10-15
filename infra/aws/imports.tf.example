@@ -59,3 +59,8 @@ import {
   to = module.logging.aws_cloudwatch_log_delivery.website
   id = "utz99FTIsl7CARbF"
 }
+
+import {
+  to = aws_sns_topic_policy.alerts
+  id = "arn:aws:sns:ap-southeast-2:287872994400:my_topic"
+}

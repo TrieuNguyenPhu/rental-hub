@@ -1,11 +1,10 @@
 import { createContext, useContext } from 'react'
-import type { AdminSession, UploadImage } from './domain/contracts.ts'
+import type { UploadImage } from './domain/contracts.ts'
 import type { createEstateStore, EstateState } from './store.ts'
 
 export interface AppServices {
   estateStore: ReturnType<typeof createEstateStore>
-  admin: AdminSession
-  uploadImage: UploadImage
+  uploadImage: UploadImage | null
 }
 
 const ServicesContext = createContext<AppServices | null>(null)

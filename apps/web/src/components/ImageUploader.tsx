@@ -13,8 +13,9 @@ export function ImageUploader({ entityType, entityId, images, onChange }: { enti
   useEffect(() => () => controller.current?.abort(), [])
   return <section className="image-uploader full-width" aria-label="Ảnh bất động sản" aria-busy={busy}>
     <div className="image-upload-heading"><strong>Ảnh {entityType === 'building' ? 'tòa nhà' : 'phòng'}</strong><span>{images.length} / 5 ảnh</span></div>
-    <label htmlFor={inputId}>Chọn ảnh</label>
-    <input id={inputId} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || images.length >= 5} aria-describedby={`${inputId}-hint ${inputId}-error`} onChange={async event => {
+    {uploadImage ? <>
+      <label htmlFor={inputId}>Chọn ảnh</label>
+      <input id={inputId} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || images.length >= 5} aria-describedby={`${inputId}-hint ${inputId}-error`} onChange={async event => {
       const file = event.currentTarget.files?.[0]
       event.currentTarget.value = ''
       if (!file || busy || images.length >= 5) return
@@ -34,8 +35,9 @@ export function ImageUploader({ entityType, entityId, images, onChange }: { enti
         if (upload.signal.aborted) return
         setError(failure instanceof TypeError ? 'Không thể tải ảnh. Kiểm tra kết nối và thử lại.' : failure instanceof Error ? failure.message : 'Không thể tải ảnh. Vui lòng thử lại.')
       } finally { setBusy(false) }
-    }} />
-    <p id={`${inputId}-hint`} className="field-hint">JPEG, PNG, WebP tĩnh · tối đa 10 MiB, 20 MP · rộng từ 1200px. Bản 1200px cao tối đa 16383px. Ảnh được lưu ngay; bỏ ảnh chỉ gỡ liên kết.</p>
+      }} />
+      <p id={`${inputId}-hint`} className="field-hint">JPEG, PNG, WebP tĩnh · tối đa 10 MiB, 20 MP · rộng từ 1200px. Bản 1200px cao tối đa 16383px. Ảnh được lưu ngay; bỏ ảnh chỉ gỡ liên kết.</p>
+    </> : <p className="field-hint">Bản AWS chỉ hiển thị ảnh đã có; không hỗ trợ tải ảnh mới.</p>}
     {busy && <p role="status" className="field-hint">Đang tải và xử lý ảnh… Đóng hộp thoại sẽ hủy ảnh đang tải.</p>}
     <div id={`${inputId}-error`}>{error && <p role="alert" className="notice error">{error}</p>}</div>
     <div className="image-gallery">{images.map((image, index) => <div className="image-tile" key={image.id}>

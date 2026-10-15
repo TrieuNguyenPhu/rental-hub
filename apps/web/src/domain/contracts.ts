@@ -14,10 +14,4 @@ export interface EstatePersistence {
   reset: () => void
 }
 
-export interface AdminSession {
-  enabled: boolean
-  signIn: (username: string, password: string) => Promise<void>
-  signOut: () => void
-}
-
 export type UploadImage = (file: File, entityType: EntityType, entityId: string, signal: AbortSignal) => Promise<ImageAsset>

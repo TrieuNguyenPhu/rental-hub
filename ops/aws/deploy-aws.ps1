@@ -6,6 +6,7 @@ Set-StrictMode -Version Latest
 Push-Location (Join-Path $PSScriptRoot '../..')
 $lock = $null
 $temporary = $null
+$previousStaticHosting = $env:VITE_STATIC_HOSTING
 try {
     if ($ReleaseSha -and ($ReleaseSha -notmatch '^[a-f0-9]{40}$' -or $RollbackVersionId)) {
         throw 'ReleaseSha must be a full lowercase Git SHA and cannot be combined with rollback.'
@@ -84,14 +85,7 @@ try {
             Invoke-Aws @('s3api', 'head-object', '--bucket', $deployment.WebsiteBucket, '--key', $key, '--expected-bucket-owner', $deployment.AccountId) | Out-Null
         }
     } else {
-        foreach ($name in @('AdminUserPoolId', 'AdminClientId', 'AdminIdentityPoolId')) {
-            if (-not $deployment.$name) { throw "Cognito Terraform output missing: $name" }
-        }
-        $env:VITE_AWS_REGION = $deployment.Region
-        $env:VITE_AWS_ADMIN_USER_POOL_ID = $deployment.AdminUserPoolId
-        $env:VITE_AWS_ADMIN_CLIENT_ID = $deployment.AdminClientId
-        $env:VITE_AWS_ADMIN_IDENTITY_POOL_ID = $deployment.AdminIdentityPoolId
-        $env:VITE_AWS_WEBSITE_BUCKET = $deployment.WebsiteBucket
+        $env:VITE_STATIC_HOSTING = 'true'
         foreach ($gate in @('lint', 'test', 'build')) {
             & npm run $gate
             if ($LASTEXITCODE -ne 0) { throw "Quality gate failed: $gate. Nothing uploaded." }
@@ -143,6 +137,7 @@ try {
         throw $failure
     }
 } finally {
+    $env:VITE_STATIC_HOSTING = $previousStaticHosting
     if ($temporary) {
         $resolvedTemporary = [IO.Path]::GetFullPath($temporary)
         $tempPrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar + 'rental-hub-aws-'

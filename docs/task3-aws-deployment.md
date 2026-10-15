@@ -37,11 +37,11 @@ CRUD vẫn lưu ở localStorage theo browser/origin. Dữ liệu ở localhost/
 
 ## Cấu trúc Terraform
 
-Hạ tầng được quản lý bằng **Terraform** trong `infra/aws/`: `main.tf` nối bốn module `storage`, `cdn`, `logging`, `admin`; `locals.tf` chứa cấu hình chung; `versions.tf` cấu hình provider; `outputs.tf` trả URL và thông tin cho script upload. `moved.tf` giữ ánh xạ từ địa chỉ tài nguyên cũ; xem [cấu trúc và migration](architecture.md). Provider AWS chính dùng Sydney, provider alias `logs` dùng `us-east-1`. Provider giới hạn account `287872994400`; `.terraform.lock.hcl` khóa phiên bản AWS provider. Không chứa credential; Terraform và AWS CLI dùng credential/profile đã đăng nhập trên máy.
+Hạ tầng được quản lý bằng **Terraform** trong `infra/aws/`: `main.tf` nối ba module `storage`, `cdn`, `logging`; `monitoring.tf` cấu hình S3 request metrics, CloudWatch alarm và SNS topic policy; `locals.tf` chứa cấu hình chung; `versions.tf` cấu hình provider; `outputs.tf` trả URL và thông tin cho script deploy. `moved.tf` giữ ánh xạ còn áp dụng từ địa chỉ tài nguyên cũ; xem [cấu trúc](architecture.md). Provider AWS chính dùng Sydney, provider alias `logs` dùng `us-east-1`; policy của S3 logs bucket dùng provider Sydney trong module logging. Provider giới hạn account `287872994400`; `.terraform.lock.hcl` khóa phiên bản AWS provider. Không chứa credential; Terraform và AWS CLI dùng credential/profile đã đăng nhập trên máy.
 
 Các tài nguyên đã tạo được import vào Terraform, không tạo lại bucket/distribution hoặc thay URL. `imports.tf.example` lưu các import block để phục hồi state nếu cần. Đây là cấu hình cho account và website này, không phải module nhiều môi trường.
 
-Kết quả import: **18 imported, 0 added, 0 changed, 0 destroyed**. Plan sau import: **No changes**. Test kiến trúc Terraform qua với mocked providers; 16 unit tests và 7 E2E tests trên domain AWS qua. HTTPS trả 200, direct S3 URL bị chặn 403, bucket logs đã nhận file access log gzip có dữ liệu; CloudWatch đã xuất hiện đủ sáu default metrics.
+Ngày 15/10/2026, state local bị thiếu và đã được phục hồi bằng import **19 tài nguyên đang tồn tại**, gồm SNS topic policy; không tạo lại bucket/distribution. Apply tiếp theo bật request metrics cho website bucket, thêm quyền `sns:Publish` cho CloudWatch trên topic `my_topic` và tạo alarm `npt-room-finder-prod-s3-5xx`. Plan sau đó cần được kiểm tra lại trước mỗi thay đổi.
 
 ## Đối chiếu yêu cầu Task 3
 
@@ -72,19 +72,19 @@ terraform '-chdir=infra/aws' output website_url
 
 `terraform test` dùng mocked provider, không tạo tài nguyên AWS. Hạ tầng thay đổi qua Terraform; build và upload nội dung `.local/build/web/` dùng AWS CLI để giữ asset hash cũ và upload index cuối cùng.
 
-**State local:** giữ và sao lưu riêng `infra/aws/terraform.tfstate` cùng `.backup`. State, plan và `.terraform/` bị loại khỏi Git; lock file được giữ trong Git. Chưa tạo remote backend hoặc bucket thứ ba. Nếu chuyển máy hoặc làm theo nhóm, cần chuyển state có kiểm soát sang backend có locking. Không chạy hai lần Terraform apply/deploy đồng thời.
+**State local:** state vừa phục hồi nằm ở `infra/aws/terraform.tfstate`; giữ và sao lưu riêng cùng `.backup`. State, plan và `.terraform/` bị loại khỏi Git; lock file được giữ trong Git. Chưa tạo remote backend hoặc bucket thứ ba. Nếu chuyển máy hoặc làm theo nhóm, cần chuyển state có kiểm soát sang backend có locking. Không chạy hai lần Terraform apply/deploy đồng thời. Không dùng bản state cũ trước khi import để chạy `apply`: bản đó có thể vẫn quản lý Cognito và gây thay đổi ngoài ý muốn.
 
 Nếu mất state trong khi các tài nguyên vẫn tồn tại, phục hồi bằng import, thay vì tạo mới:
 
 ```powershell
 Copy-Item infra/aws/imports.tf.example infra/aws/imports.tf
 terraform '-chdir=infra/aws' plan '-out=adopt.tfplan'
-# Chỉ apply khi plan import đúng 18 tài nguyên, không tạo/xóa/thay đổi hạ tầng.
+# Chỉ apply khi plan đúng với tài nguyên đang có và không thay thế bucket/distribution.
 terraform '-chdir=infra/aws' apply adopt.tfplan
 Remove-Item -LiteralPath infra/aws/imports.tf
 ```
 
-Import blocks giữ ngoài cấu hình thường dùng để mocked tests không cố import tài nguyên thật. Buckets và distribution có `prevent_destroy`; buckets có `force_destroy=false`. Không chạy destroy để cập nhật website.
+Import blocks giữ ngoài cấu hình thường dùng để mocked tests không cố import tài nguyên thật. Mẫu hiện gồm 19 import blocks/instances, kể cả policy của SNS topic đang tồn tại. Buckets và distribution có `prevent_destroy`; buckets có `force_destroy=false`. Không chạy destroy để cập nhật website.
 
 ## Build và deploy lại
 
@@ -117,7 +117,9 @@ aws s3 ls s3://npt-room-finder-prod-logs-287872994400/AWSLogs/287872994400/Cloud
 aws cloudwatch list-metrics --namespace AWS/CloudFront --dimensions Name=DistributionId,Value=E1V0VFFK749XB0 --region us-east-1
 ```
 
-CloudWatch console: region **N. Virginia**, namespace `AWS/CloudFront`, dimensions `DistributionId=E1V0VFFK749XB0` và `Region=Global`. Metrics mặc định gồm Requests, BytesDownloaded, BytesUploaded, TotalErrorRate, 4xxErrorRate và 5xxErrorRate. Không bật additional metrics hoặc alarm trong task này. `CacheHitRate` thuộc additional metrics có phí, nên không tự bật chỉ vì được liệt kê trong sơ đồ. [AWS metrics](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/viewing-cloudfront-metrics.html).
+CloudFront metrics nằm ở **N. Virginia**, namespace `AWS/CloudFront`, dimensions `DistributionId=E1V0VFFK749XB0` và `Region=Global`. Metrics mặc định gồm Requests, BytesDownloaded, BytesUploaded, TotalErrorRate, 4xxErrorRate và 5xxErrorRate. SNS topic hiện ở Sydney; SCP của account chặn SNS/EventBridge tại N. Virginia. Vì vậy alarm hiện tại theo dõi **S3 origin 5xx** ở Sydney, không theo dõi CloudFront 5xx. `CacheHitRate` thuộc additional metrics có phí và chưa bật. [AWS CloudFront metrics](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/monitoring-using-cloudwatch.html).
+
+S3 request metrics được bật cho `EntireBucket` của website bucket. Alarm `AWS/S3 / 5xxErrors` phát cảnh báo khi có ít nhất một lỗi trong 5 phút, `treat_missing_data=notBreaching`, rồi gửi vào `arn:aws:sns:ap-southeast-2:287872994400:my_topic`. Topic đã có email subscription được xác nhận. Ngày 15/10/2026, thử chuyển alarm sang `ALARM` ghi nhận CloudWatch action gửi SNS thành công; alarm đã được đưa về `OK`. Request metrics có phí CloudWatch riêng và có thể mất khoảng 15 phút trước khi hiện dữ liệu đầu tiên. [AWS S3 request metrics](https://docs.aws.amazon.com/AmazonS3/latest/userguide/configure-request-metrics-bucket.html).
 
 Logs v2 ở S3 dùng JSON, cookie logging tắt. Không cấu hình legacy logging trên distribution; v2 được quản lý bằng ba resource CloudWatch delivery riêng. S3 logs bucket không bật versioning để expiration thực sự xóa log, không chỉ tạo delete marker.
 

@@ -1,5 +1,6 @@
 resource "aws_s3_bucket_policy" "logs" {
-  bucket = var.logs_bucket.id
+  provider = aws.sydney
+  bucket   = var.logs_bucket.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
