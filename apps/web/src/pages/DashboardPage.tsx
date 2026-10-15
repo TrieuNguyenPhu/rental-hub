@@ -6,6 +6,7 @@ import { BookingCustomerCell, BookingRoomCell } from '../components/BookingDetai
 import { EmptyState, PageHeading } from '../components/PageParts'
 import { dateLabel } from '../utils/format'
 import { localDate } from '../domain/dates'
+import '../styles/dashboard.css'
 
 export function DashboardPage() {
   const buildings = useEstateStore((state) => state.buildings)
@@ -51,14 +52,14 @@ export function DashboardPage() {
     },
   ]
   return (
-    <>
+    <div className="dashboard-page">
       <PageHeading
         title="Tổng quan"
         subtitle="Mọi thông tin về bất động sản của bạn, trong một không gian."
       />
       <div className="stats-grid">
         {stats.map((stat) => (
-          <Link to={stat.to} className="stat-card" key={stat.label}>
+          <Link to={stat.to} className={`stat-card stat-${stat.color}`} key={stat.label}>
             <div className="stat-top">
               <span>{stat.label}</span>
               <span className={`stat-icon ${stat.color}`}>
@@ -170,6 +171,6 @@ export function DashboardPage() {
           </div>
         )}
       </section>
-    </>
+    </div>
   )
 }

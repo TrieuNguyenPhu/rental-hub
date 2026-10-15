@@ -1,0 +1,55 @@
+.dashboard-page .page-heading { margin-bottom: 30px; }
+.dashboard-page .stats-grid { gap: 14px; margin-bottom: 32px; }
+.dashboard-page .stat-card {
+  min-height: 158px;
+  padding: 23px;
+  border: 1px solid #dce5ec;
+  border-top: 3px solid var(--stat-accent);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px #102d4808;
+  transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.dashboard-page .stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 22px #102d4814; }
+.dashboard-page .stat-card:focus-visible { outline-offset: 3px; }
+.dashboard-page .stat-blue { --stat-accent: #2d72b9; }
+.dashboard-page .stat-violet { --stat-accent: #7463bb; }
+.dashboard-page .stat-green { --stat-accent: #168962; }
+.dashboard-page .stat-orange { --stat-accent: #b87920; }
+.dashboard-page .stat-top { align-items: flex-start; color: #4a5d72; font-size: 12px; font-weight: 600; line-height: 1.5; }
+.dashboard-page .stat-icon { width: 42px; height: 42px; }
+.dashboard-page .stat-value { margin-top: 19px; font-size: 38px; font-weight: 700; }
+.dashboard-page .stat-card p { margin-top: 13px; color: #586b80; font-size: 11px; line-height: 1.5; }
+.dashboard-page .dashboard-bookings { border-color: #dce5ec; box-shadow: 0 8px 24px #102d4808; }
+.dashboard-page .section-heading { padding: 26px 24px; }
+.dashboard-page .section-heading h2 { font-size: 17px; font-weight: 700; }
+.dashboard-page .section-heading p { font-size: 11px; }
+.dashboard-page .text-link { font-size: 11px; font-weight: 600; }
+.dashboard-page .dashboard-bookings th { font-size: 11px; font-weight: 600; }
+.dashboard-page .dashboard-bookings td { font-size: 12px; }
+.dashboard-page .portfolio-section { margin-top: 36px; }
+.dashboard-page .portfolio-section > .section-heading { padding-bottom: 18px; }
+.dashboard-page .building-grid { gap: 16px; }
+.dashboard-page .building-card { border-color: #dce5ec; padding: 24px; box-shadow: 0 6px 18px #102d4808; }
+.dashboard-page .building-card h3 { font-size: 16px; }
+.dashboard-page .building-location { font-size: 11px; }
+.dashboard-page .building-address { font-size: 11px; min-height: 38px; }
+.dashboard-page .building-metrics { margin-top: 22px; padding-top: 20px; }
+.dashboard-page .building-metrics strong { font-size: 20px; }
+.dashboard-page .building-metrics span { font-size: 10px; }
+
+@media (max-width: 767px) {
+  .dashboard-page .stats-grid { gap: 12px; }
+  .dashboard-page .stat-card { min-height: 150px; padding: 17px; }
+  .dashboard-page .stat-value { font-size: 32px; }
+  .dashboard-page .section-heading { padding: 22px 18px; }
+  .dashboard-page .building-card { padding: 20px; }
+}
+@media (max-width: 540px) {
+  .dashboard-page .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-page .stat-top { font-size: 11px; }
+  .dashboard-page .stat-icon { width: 34px; height: 34px; }
+  .dashboard-page .stat-icon svg { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page .stat-card { transition: none; }
+}
