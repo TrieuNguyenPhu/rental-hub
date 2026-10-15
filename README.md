@@ -1,5 +1,7 @@
 # EstateFlow — Real Estate Management MVP
 
+Giải thích các khái niệm React, Hooks và cấu trúc mã nguồn: [React trong bài EstateFlow](docs/react-learning.md).
+
 Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt, không có database. Local/VPS upload ảnh qua API Node/Sharp; AWS dùng Cognito Admin và S3. Font được lưu trong `apps/web/public/fonts/`.
 
 ## Cài đặt và chạy local

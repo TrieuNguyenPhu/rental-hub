@@ -9,7 +9,11 @@ import { EmptyState, PageHeading, RowActions, SearchInput, SuccessNotice } from 
 import { currency } from '../utils/format'
 
 export function RoomsPage() {
-  const { buildings, rooms, addRoom, updateRoom, deleteRoom } = useEstateStore(state => state)
+  const buildings = useEstateStore(state => state.buildings)
+  const rooms = useEstateStore(state => state.rooms)
+  const addRoom = useEstateStore(state => state.addRoom)
+  const updateRoom = useEstateStore(state => state.updateRoom)
+  const deleteRoom = useEstateStore(state => state.deleteRoom)
   const [query, setQuery] = useState('')
   const [buildingId, setBuildingId] = useState('')
   const [status, setStatus] = useState('')

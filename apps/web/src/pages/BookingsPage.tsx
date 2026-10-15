@@ -4,13 +4,19 @@ import { useEstateStore } from '../AppContext'
 import type { Booking } from '../../../../packages/domain/models.ts'
 import { bookingRoomError } from '../domain/validation'
 import { BookingForm } from '../components/BookingForm'
+import { BookingCustomerCell, BookingRoomCell } from '../components/BookingDetails'
 import { Badge } from '../components/Badge'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { EmptyState, PageHeading, RowActions, SearchInput, SuccessNotice } from '../components/PageParts'
 import { dateLabel } from '../utils/format'
 
 export function BookingsPage() {
-  const { buildings, rooms, bookings, addBooking, updateBooking, cancelBooking } = useEstateStore(state => state)
+  const buildings = useEstateStore(state => state.buildings)
+  const rooms = useEstateStore(state => state.rooms)
+  const bookings = useEstateStore(state => state.bookings)
+  const addBooking = useEstateStore(state => state.addBooking)
+  const updateBooking = useEstateStore(state => state.updateBooking)
+  const cancelBooking = useEstateStore(state => state.cancelBooking)
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [editing, setEditing] = useState<Booking | 'new' | null>(null)
@@ -27,8 +33,8 @@ export function BookingsPage() {
       {filtered.length ? <div className="table-scroll"><table><thead><tr><th>Khách hàng</th><th>Phòng / Tòa nhà</th><th>Nhận phòng</th><th>Trả phòng</th><th>Trạng thái</th><th className="align-right">Thao tác</th></tr></thead><tbody>{filtered.map(booking => {
         const room = rooms.find(item => item.id === booking.roomId)
         return <tr key={booking.id}>
-          <td><div className="entity-cell"><span className="customer-avatar">{booking.customerName.split(' ').at(-1)?.slice(0, 1)}</span><div><strong>{booking.customerName}</strong><span className="cell-subtitle">{booking.customerPhone}</span></div></div></td>
-          <td><strong className="cell-title">Phòng {room?.roomNumber}</strong><span className="cell-subtitle">{buildings.find(item => item.id === room?.buildingId)?.name}</span></td>
+          <BookingCustomerCell booking={booking} />
+          <BookingRoomCell room={room} buildingName={buildings.find(item => item.id === room?.buildingId)?.name} />
           <td><span className="date-cell"><CalendarDays size={14} />{dateLabel(booking.checkIn)}</span></td><td>{dateLabel(booking.checkOut)}</td><td><Badge status={booking.status} /></td>
           <td><RowActions name={`lịch của ${booking.customerName}`} deleteLabel="Hủy" disabled={booking.status === 'cancelled'} onEdit={() => setEditing(booking)} onDelete={() => setCancelling(booking)} /></td>
         </tr>

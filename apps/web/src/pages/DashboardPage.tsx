@@ -2,12 +2,15 @@ import { ArrowRight, Building2, CalendarCheck2, DoorOpen, MapPin, CircleCheck } 
 import { Link } from 'react-router-dom'
 import { useEstateStore } from '../AppContext'
 import { Badge } from '../components/Badge'
+import { BookingCustomerCell, BookingRoomCell } from '../components/BookingDetails'
 import { EmptyState, PageHeading } from '../components/PageParts'
 import { dateLabel } from '../utils/format'
 import { localDate } from '../domain/dates'
 
 export function DashboardPage() {
-  const { buildings, rooms, bookings } = useEstateStore(state => state)
+  const buildings = useEstateStore(state => state.buildings)
+  const rooms = useEstateStore(state => state.rooms)
+  const bookings = useEstateStore(state => state.bookings)
   const available = rooms.filter(room => room.status === 'available').length
   const current = bookings.filter(booking => booking.status === 'confirmed' && booking.checkOut > localDate())
   const upcoming = [...current].sort((a, b) => a.checkIn.localeCompare(b.checkIn)).slice(0, 5)
@@ -24,7 +27,7 @@ export function DashboardPage() {
       {upcoming.length ? <div className="table-scroll"><table><thead><tr><th>Khách hàng</th><th>Phòng / Tòa nhà</th><th>Nhận phòng</th><th>Trả phòng</th><th>Trạng thái</th></tr></thead><tbody>{upcoming.map(booking => {
         const room = rooms.find(item => item.id === booking.roomId)
         const building = buildings.find(item => item.id === room?.buildingId)
-        return <tr key={booking.id}><td><div className="entity-cell"><span className="customer-avatar">{booking.customerName.split(' ').at(-1)?.slice(0, 1)}</span><div><strong>{booking.customerName}</strong><span className="cell-subtitle">{booking.customerPhone}</span></div></div></td><td><strong className="cell-title">Phòng {room?.roomNumber}</strong><span className="cell-subtitle">{building?.name}</span></td><td>{dateLabel(booking.checkIn)}</td><td>{dateLabel(booking.checkOut)}</td><td><Badge status={booking.status} /></td></tr>
+        return <tr key={booking.id}><BookingCustomerCell booking={booking} /><BookingRoomCell room={room} buildingName={building?.name} /><td>{dateLabel(booking.checkIn)}</td><td>{dateLabel(booking.checkOut)}</td><td><Badge status={booking.status} /></td></tr>
       })}</tbody></table></div> : <EmptyState>Chưa có lịch đặt còn hiệu lực. Bạn có thể tạo lịch mới tại trang Lịch đặt phòng.</EmptyState>}
     </section>
     <section className="portfolio-section"><div className="section-heading"><div><h2>Danh mục tòa nhà</h2><p>Thông tin hoạt động tại từng địa điểm.</p></div><Link className="text-link" to="/buildings">Quản lý tòa nhà <ArrowRight size={16} /></Link></div>

@@ -8,7 +8,11 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { EmptyState, PageHeading, RowActions, SearchInput, SuccessNotice } from '../components/PageParts'
 
 export function BuildingsPage() {
-  const { buildings, rooms, addBuilding, updateBuilding, deleteBuilding } = useEstateStore(state => state)
+  const buildings = useEstateStore(state => state.buildings)
+  const rooms = useEstateStore(state => state.rooms)
+  const addBuilding = useEstateStore(state => state.addBuilding)
+  const updateBuilding = useEstateStore(state => state.updateBuilding)
+  const deleteBuilding = useEstateStore(state => state.deleteBuilding)
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState<Building | 'new' | null>(null)
   const [deleting, setDeleting] = useState<Building | null>(null)
