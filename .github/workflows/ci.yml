@@ -11,12 +11,12 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  verify:
+  quality:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -30,17 +30,71 @@ jobs:
       - run: npm run build
       - run: npm run build:media
       - run: npm audit --omit=dev --audit-level=high
+
+  operations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
       - name: Release and AWS rollback fixtures
         run: |
           sudo apt-get update
           sudo apt-get install -y nginx
           bash tests/operations/release.sh
           pwsh tests/operations/aws-rollback.ps1
-      - run: npx playwright install --with-deps chrome
+
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-ubuntu-24.04-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
       - run: npm run test:e2e
+        env:
+          PLAYWRIGHT_CHANNEL: chromium
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-failure
           path: .local/test-results/
           if-no-files-found: ignore
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: [quality, operations, e2e]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-region: ap-southeast-2
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          allowed-account-ids: '287872994400'
+      - name: Deploy and verify CloudFront
+        shell: pwsh
+        env:
+          AWS_DEPLOYMENT_JSON: ${{ vars.AWS_DEPLOYMENT_JSON }}
+        run: ./ops/aws/deploy-aws.ps1 -ReleaseSha $env:GITHUB_SHA -Confirm:$false

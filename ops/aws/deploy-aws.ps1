@@ -13,9 +13,16 @@ try {
     }
     # One operator machine at a time; do not run this from two separate checkouts/hosts.
     $lock = [IO.File]::Open((Join-Path (Get-Location) '.aws-deploy.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
-    $terraformOutput = & terraform '-chdir=infra/aws' output -json deployment
-    if ($LASTEXITCODE -ne 0) { throw 'Terraform outputs unavailable. Run terraform init, plan and apply first.' }
-    $deployment = ($terraformOutput -join "`n") | ConvertFrom-Json
+    if ($env:AWS_DEPLOYMENT_JSON) {
+        $deployment = $env:AWS_DEPLOYMENT_JSON | ConvertFrom-Json
+    } else {
+        $terraformOutput = & terraform '-chdir=infra/aws' output -json deployment
+        if ($LASTEXITCODE -ne 0) { throw 'Terraform outputs unavailable. Run terraform init, plan and apply first.' }
+        $deployment = ($terraformOutput -join "`n") | ConvertFrom-Json
+    }
+    foreach ($field in @('AccountId', 'Region', 'WebsiteBucket', 'DistributionId', 'DomainName')) {
+        if (-not $deployment.$field) { throw "Deployment config is missing $field" }
+    }
     function Invoke-Aws([string[]]$AwsArguments) {
         $output = & aws @AwsArguments --region $deployment.Region --no-cli-pager
         if ($LASTEXITCODE -ne 0) { throw "AWS command failed: $($AwsArguments[0..1] -join ' ')" }
@@ -69,7 +76,7 @@ try {
     $previous = (Invoke-Aws @('s3api', 'head-object', '--bucket', $deployment.WebsiteBucket, '--key', 'index.html', '--expected-bucket-owner', $deployment.AccountId, '--output', 'json')) | ConvertFrom-Json
     if (-not $previous.VersionId -or $previous.VersionId -eq 'null') { throw 'Current index needs an S3 version before deployment' }
     $temporary = Join-Path ([IO.Path]::GetTempPath()) ('rental-hub-aws-' + [guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $temporary | Out-Null
+    New-Item -ItemType Directory -Path $temporary -WhatIf:$false | Out-Null
     $savedIndex = Join-Path $temporary 'previous.html'
     Invoke-Aws @('s3api', 'get-object', '--bucket', $deployment.WebsiteBucket, '--key', 'index.html', '--version-id', $previous.VersionId, '--expected-bucket-owner', $deployment.AccountId, $savedIndex) | Out-Null
     $previousIndex = [IO.File]::ReadAllText($savedIndex)
@@ -104,7 +111,11 @@ try {
             if ($key -eq 'index.html' -or $key.StartsWith('assets/') -or $publishedKeys -notcontains $key) { continue }
             $savedPublicFile = Join-Path $temporary 'public-file'
             Invoke-Aws @('s3api', 'get-object', '--bucket', $deployment.WebsiteBucket, '--key', $key, '--expected-bucket-owner', $deployment.AccountId, $savedPublicFile) | Out-Null
-            if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $savedPublicFile).Hash) {
+            $dryRun = $WhatIfPreference
+            $WhatIfPreference = $false
+            try { $changed = (Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $savedPublicFile).Hash }
+            finally { $WhatIfPreference = $dryRun }
+            if ($changed) {
                 throw "Public file changed: $key. Use a new filename so previous indexes remain valid. Nothing uploaded."
             }
         }
@@ -141,7 +152,7 @@ try {
     if ($temporary) {
         $resolvedTemporary = [IO.Path]::GetFullPath($temporary)
         $tempPrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar + 'rental-hub-aws-'
-        if ($resolvedTemporary.StartsWith($tempPrefix, [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -LiteralPath $resolvedTemporary -Recurse -Force }
+        if ($resolvedTemporary.StartsWith($tempPrefix, [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -LiteralPath $resolvedTemporary -Recurse -Force -WhatIf:$false }
     }
     if ($lock) { $lock.Dispose() }
     Pop-Location
