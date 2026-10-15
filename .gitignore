@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+dist/
 dist-ssr
 *.local
 
@@ -25,7 +25,6 @@ dist-ssr
 .env
 .env.*
 *.pem
-test-results/
 playwright-report/
 
 # Terraform local state and plans
@@ -34,8 +33,11 @@ playwright-report/
 *.tfstate.*
 *.tfplan
 infra/aws/*.local.*
+.local/
 server-dist/
-.media/
+apps/web/dist/
+apps/media/build/
 !.env.example
-!deploy/env/*.env.example
+!ops/deploy/env/*.env.example
 .aws-deploy.lock
+.worktrees/

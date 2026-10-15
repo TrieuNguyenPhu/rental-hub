@@ -1,6 +1,6 @@
 # EstateFlow — Real Estate Management MVP
 
-Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt. Upload ảnh dùng API Node/Sharp riêng, không có database hoặc login sản phẩm. Font được lưu trong `public/fonts/`.
+Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần; metadata CRUD lưu trong trình duyệt, không có database. Local/VPS upload ảnh qua API Node/Sharp; AWS dùng Cognito Admin và S3. Font được lưu trong `apps/web/public/fonts/`.
 
 ## Cài đặt và chạy local
 
@@ -26,7 +26,7 @@ npm run build
 npm run preview
 ```
 
-Build chạy TypeScript validation trước khi tạo `dist/`. Preview phục vụ bản build tại URL Vite in ra, mặc định `http://localhost:4173`.
+Build chạy TypeScript validation trước khi tạo bản web tại `.local/build/web/` (thư mục sinh tự động, bị Git bỏ qua). Preview phục vụ bản build tại URL Vite in ra, mặc định `http://localhost:4173`.
 
 Ứng dụng dùng BrowserRouter. Khi phục vụ trên static hosting sau này, cần fallback các route về `index.html` để refresh `/buildings`, `/rooms`, `/bookings` hoạt động. Không cấu hình Nginx, VPS, AWS, Docker hoặc CI/CD trong Task 1.
 
@@ -40,11 +40,11 @@ Build chạy TypeScript validation trước khi tạo `dist/`. Preview phục v�
 - Modal có quản lý focus, hỗ trợ Escape; thông báo thành công/lỗi và layout responsive với bảng cuộn ngang trên màn hình nhỏ.
 - Khôi phục 3 tòa nhà, 12 phòng và 7 booking demo bằng nút có xác nhận ở sidebar.
 
-Tất cả validation nghiệp vụ chạy trong actions của Zustand thông qua các hàm dùng chung. Actions trả về `{ ok: true, id }` hoặc `{ ok: false, error }`; cập nhật bất biến và ID dùng `crypto.randomUUID()`.
+Validation và CRUD nằm trong `apps/web/src/domain`; Zustand giữ state cho giao diện và gọi các actions này. Actions trả về `{ ok: true, id }` hoặc `{ ok: false, error }`; cập nhật bất biến và ID dùng `crypto.randomUUID()`.
 
 ### Quy tắc booking
 
-Helper `src/utils/bookingOverlap.ts` áp dụng:
+Helper `apps/web/src/domain/bookingOverlap.ts` áp dụng:
 
 ```text
 newCheckIn < existingCheckOut && newCheckOut > existingCheckIn
@@ -57,28 +57,28 @@ Dashboard đếm “phòng khả dụng” theo `room.status === 'available'`, k
 ## Cấu trúc
 
 ```text
-src/
-  components/
-    layout/        # Sidebar, header, layout
-    common/        # Modal, form, xác nhận, badge, trạng thái rỗng
-    buildings/     # BuildingForm
-    rooms/         # RoomForm
-    bookings/      # BookingForm
-  pages/           # DashboardPage, BuildingsPage, RoomsPage, BookingsPage
-  store/           # estateStore: dữ liệu, actions, persist
-  types/           # Models và kiểu kết quả actions
-  utils/           # Validation, overlap, định dạng, form
-  data/            # Dữ liệu demo có liên kết hợp lệ
-  App.tsx
-  main.tsx
-  index.css
-  fonts.css
-public/fonts/      # Font và giấy phép OFL
+apps/
+  web/                  # React + Vite: src/, public/, index.html
+  media/                # Node HTTP API for image processing and storage
+packages/
+  domain/models.ts      # Shared data types
+infra/aws/              # Terraform root module and AWS modules
+ops/
+  aws/                  # AWS deployment and admin setup
+  deploy/               # VPS, Nginx and systemd templates
+  release/              # VPS build, deploy, rollback and smoke checks
 tests/
-  bookingOverlap.test.ts
-  estateStore.test.ts
-  e2e/app.spec.ts
+  unit/                 # Node unit tests
+  architecture/         # Dependency and Terraform migration checks
+  media/                # Media API and image tests
+  e2e/                  # Playwright
+  operations/           # Operations script fixtures
+docs/                   # Guides, runbooks and acceptance evidence
+.local/                 # Generated builds, media and test output; gitignored
 ```
+
+Trong `apps/web/src`, `domain/` chứa quy tắc và actions nghiệp vụ, `services/` chứa adapter lưu trữ/AWS/upload, `components/` và `pages/` là giao diện, còn `store.ts` nối state giao diện với actions. Media server có entry point và các module xử lý ảnh riêng trong `apps/media/src`.
+
 
 ## Lưu dữ liệu
 
@@ -136,7 +136,7 @@ PLAYWRIGHT_CHANNEL=chromium npm run test:e2e
 
 ## Tài liệu tham khảo
 
-Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
+Triển khai AWS Task 3 bằng Terraform: [cấu hình, deploy lại, log và rollback](docs/task3-aws-deployment.md), [đăng nhập Admin Cognito và tải ảnh S3](docs/task3-admin-images.md). Website: https://d2pqq5rtvfmo3w.cloudfront.net.
 
 - [Vite](https://vite.dev/guide/)
 - [Zustand persist](https://zustand.docs.pmnd.rs/reference/integrations/persisting-store-data)
@@ -148,7 +148,7 @@ Copy `.env.example` sang `.env`, chạy `npm run dev:media` trong một terminal
 
 Lưu tòa nhà/phòng trước, mở chỉnh sửa rồi chọn ảnh. JPEG/PNG/WebP tĩnh, tối đa 10 MiB/20 MP, rộng sau EXIF từ 1200px. Server tạo WebP chất lượng 80, rộng 600/1200, giữ tỷ lệ và loại metadata. Ảnh được liên kết ngay sau upload; nút Đóng form không hoàn tác ảnh đã liên kết. UI tối đa 5 ảnh/entity; bỏ ảnh chỉ gỡ liên kết, không xóa file. Ảnh public; metadata riêng theo browser/origin.
 
-Dev lưu files trong `.media/` (ngoài Git), Vite proxy `/api` và `/images` tới `127.0.0.1:3001`. `npm run build:media` tạo `server-dist/server/main.js`; `npm run start:media` chạy entry production với environment do service cung cấp. Production bắt buộc roots tuyệt đối tồn tại, cùng filesystem, ngoài release; `SITE_ORIGIN` HTTPS, `release.json` có full SHA ở release chứa `server-dist/`. Default mode là production. Media bind loopback; Nginx phải cung cấp HTTPS + Basic Auth cho upload, body/rate limits và static `/images/`. Không đưa secrets vào `VITE_*` hoặc Git. Candidate dùng `MEDIA_READ_ONLY=true`, không upload hoặc dọn temp production.
+Dev lưu files trong `.local/media/` (ngoài Git), Vite proxy `/api` và `/images` tới `127.0.0.1:3001`. `npm run build:media` tạo `.local/build/media/apps/media/src/main.js` (release đóng gói entry thành `server-dist/server/main.js`); `npm run start:media` chạy entry production với environment do service cung cấp. Production bắt buộc roots tuyệt đối tồn tại, cùng filesystem, ngoài release; `SITE_ORIGIN` HTTPS, `release.json` có full SHA ở release chứa `server-dist/`. Default mode là production. Media bind loopback; Nginx phải cung cấp HTTPS + Basic Auth cho upload, body/rate limits và static `/images/`. Không đưa secrets vào `VITE_*` hoặc Git. Candidate dùng `MEDIA_READ_ONLY=true`, không upload hoặc dọn temp production.
 
 API nhận raw file `POST /api/images?entityType=building|room&entityId=<id>`, Origin đúng SITE_ORIGIN. `GET /api/health` kiểm tra quyền ghi và trả releaseId. Một ảnh xử lý tại một thời điểm (429 khi bận); deadline body 30 giây. File ảnh cần backup riêng; không có garbage collection.
 

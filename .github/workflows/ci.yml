@@ -34,13 +34,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y nginx
-          bash scripts/test-release.sh
-          pwsh scripts/test-aws-rollback.ps1
+          bash tests/operations/release.sh
+          pwsh tests/operations/aws-rollback.ps1
       - run: npx playwright install --with-deps chrome
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-failure
-          path: test-results/
+          path: .local/test-results/
           if-no-files-found: ignore

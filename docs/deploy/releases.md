@@ -7,9 +7,9 @@ Lệnh chạy bằng deploy user trên VPS Ubuntu; config `/etc/rental-hub/deplo
 ```bash
 git fetch origin
 git rev-parse origin/main
-bash scripts/build-release.sh FULL_SHA /etc/rental-hub/deploy.env
-bash scripts/deploy.sh FULL_SHA /etc/rental-hub/deploy.env
-bash scripts/rollback.sh OLD_FULL_SHA /etc/rental-hub/deploy.env
+bash ops/release/build-release.sh FULL_SHA /etc/rental-hub/deploy.env
+bash ops/release/deploy.sh FULL_SHA /etc/rental-hub/deploy.env
+bash ops/release/rollback.sh OLD_FULL_SHA /etc/rental-hub/deploy.env
 ```
 
 Build clone đúng SHA vào `.build.*`, chạy lint/types/tests/build/media build, cài runtime bằng lockfile và kiểm tra Sharp. Manifest đi cùng frontend/runtime; checksum bao phủ dist, server-dist, runtime và package files. Release hoàn chỉnh được dùng lại; không ghi đè. Build lỗi chỉ dọn thư mục tạm của lần đó.
@@ -43,13 +43,13 @@ Trong lần triển khai công việc này chỉ kiểm thử script AWS bằng 
 
 ```bash
 # Ubuntu có Node 24, git, curl, Nginx, flock; không dùng sudo/service thật.
-bash scripts/test-release.sh
-shellcheck -x scripts/*.sh
+bash tests/operations/release.sh
+shellcheck -x ops/release/*.sh
 ```
 
 ```powershell
 # Không có request AWS thật trong bài tự kiểm tra này.
-powershell -NoProfile -File scripts/test-aws-rollback.ps1
+powershell -NoProfile -File tests/operations/aws-rollback.ps1
 # VPS thật, metadata CRUD dùng context demo riêng.
 $env:SITE_URL = 'https://ACTUAL_VPS_DOMAIN'
 $env:EXPECTED_RELEASE = 'ACTUAL_FULL_SHA'

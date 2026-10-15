@@ -21,7 +21,7 @@ Luôn ghi thời gian, URL, release SHA (`/release.json` và `/api/health`), tri
 
 Chỉ dùng sandbox hoặc cửa sổ demo đã được thống nhất. Mỗi lần một nguyên nhân, chuẩn bị cách phục hồi và backup trước. Không chặn SSH, sửa AWS production hoặc xóa ảnh để tạo lỗi.
 
-`scripts/test-release.sh` kiểm thử build lỗi, candidate lỗi, rollback thiếu runtime, asset collision, activation lỗi, TERM, lock timeout, lần đầu không có previous. Dùng Git, filesystem, Node HTTP và Nginx thật; npm/service manager là fixture. Kết quả này chứng minh orchestration, chưa chứng minh systemd/firewall/VPS công khai.
+`tests/operations/release.sh` kiểm thử build lỗi, candidate lỗi, rollback thiếu runtime, asset collision, activation lỗi, TERM, lock timeout, lần đầu không có previous. Dùng Git, filesystem, Node HTTP và Nginx thật; npm/service manager là fixture. Kết quả này chứng minh orchestration, chưa chứng minh systemd/firewall/VPS công khai.
 
 Diễn tập tích hợp bổ sung: stop Node sandbox gây 502 rồi khởi động lại; đổi quyền file thành 000 gây 403 rồi phục hồi; bỏ SPA fallback gây route 404 rồi phục hồi; cất bundle vào backup để chứng minh build vẫn tồn tại nhưng frontend thiếu JS; truy cập port không listen để phân biệt lỗi kết nối; kiểm tra cert fixture localhost. Với ENOSPC, unit/API tests inject lỗi filesystem, chưa thay cho ổ đĩa production thực sự đầy.
 

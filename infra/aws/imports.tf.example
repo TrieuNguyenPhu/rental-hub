@@ -1,61 +1,61 @@
 # Adopt the resources already deployed for Task 3; these blocks do not recreate them.
 import {
   for_each = local.buckets
-  to       = aws_s3_bucket.buckets[each.key]
+  to       = module.storage.aws_s3_bucket.buckets[each.key]
   id       = each.value
 }
 import {
   for_each = local.buckets
-  to       = aws_s3_bucket_public_access_block.buckets[each.key]
+  to       = module.storage.aws_s3_bucket_public_access_block.buckets[each.key]
   id       = each.value
 }
 import {
   for_each = local.buckets
-  to       = aws_s3_bucket_ownership_controls.buckets[each.key]
+  to       = module.storage.aws_s3_bucket_ownership_controls.buckets[each.key]
   id       = each.value
 }
 import {
   for_each = local.buckets
-  to       = aws_s3_bucket_server_side_encryption_configuration.buckets[each.key]
+  to       = module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets[each.key]
   id       = each.value
 }
 import {
-  to = aws_s3_bucket_versioning.website
+  to = module.storage.aws_s3_bucket_versioning.website
   id = "npt-room-finder-prod-website-287872994400"
 }
 import {
-  to = aws_s3_bucket_lifecycle_configuration.logs
+  to = module.storage.aws_s3_bucket_lifecycle_configuration.logs
   id = "npt-room-finder-prod-logs-287872994400"
 }
 import {
-  to = aws_s3_bucket_policy.website
+  to = module.cdn.aws_s3_bucket_policy.website
   id = "npt-room-finder-prod-website-287872994400"
 }
 import {
-  to = aws_s3_bucket_policy.logs
+  to = module.logging.aws_s3_bucket_policy.logs
   id = "npt-room-finder-prod-logs-287872994400"
 }
 import {
-  to = aws_cloudfront_origin_access_control.website
+  to = module.cdn.aws_cloudfront_origin_access_control.website
   id = "E2QYLDZS7M2BPH"
 }
 import {
-  to = aws_cloudfront_cache_policy.website
+  to = module.cdn.aws_cloudfront_cache_policy.website
   id = "6e278f8a-ebf8-4f23-b12c-758c95b38759"
 }
 import {
-  to = aws_cloudfront_distribution.website
+  to = module.cdn.aws_cloudfront_distribution.website
   id = "E1V0VFFK749XB0"
 }
 import {
-  to = aws_cloudwatch_log_delivery_source.website
+  to = module.logging.aws_cloudwatch_log_delivery_source.website
   id = "npt-room-finder-prod"
 }
 import {
-  to = aws_cloudwatch_log_delivery_destination.s3
+  to = module.logging.aws_cloudwatch_log_delivery_destination.s3
   id = "npt-room-finder-prod-s3"
 }
 import {
-  to = aws_cloudwatch_log_delivery.website
+  to = module.logging.aws_cloudwatch_log_delivery.website
   id = "utz99FTIsl7CARbF"
 }
