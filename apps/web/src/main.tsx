@@ -8,6 +8,7 @@ import './styles/appShell.css'
 import { createEstateStore } from './store'
 import { browserStorage, createEstatePersistence } from './services/estatePersistence'
 import { uploadHttpImage } from './services/uploadHttpImage'
+import './styles/dataWorkflows.css'
 
 const services = {
   estateStore: createEstateStore(createEstatePersistence(browserStorage)),

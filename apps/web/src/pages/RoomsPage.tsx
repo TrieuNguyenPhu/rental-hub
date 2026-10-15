@@ -33,7 +33,7 @@ export function RoomsPage() {
       room.roomNumber.toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi')),
   )
   return (
-    <>
+    <div className="data-page">
       <PageHeading
         title="Phòng"
         subtitle="Theo dõi phòng, giá thuê và tình trạng sẵn sàng."
@@ -73,7 +73,7 @@ export function RoomsPage() {
           <span className="result-count">{filtered.length} phòng</span>
         </div>
         {filtered.length ? (
-          <div className="table-scroll">
+          <div className="table-scroll" tabIndex={0} role="region" aria-label="Bảng phòng">
             <table>
               <thead>
                 <tr>
@@ -166,6 +166,6 @@ export function RoomsPage() {
           }}
         />
       )}
-    </>
+    </div>
   )
 }
