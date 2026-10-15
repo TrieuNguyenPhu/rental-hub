@@ -34,8 +34,10 @@ try {
     Invoke-Aws @('s3api', 'head-bucket', '--bucket', $deployment.WebsiteBucket, '--expected-bucket-owner', $deployment.AccountId) | Out-Null
     $distributionJson = Invoke-Aws @('cloudfront', 'get-distribution', '--id', $deployment.DistributionId, '--output', 'json')
     $distribution = ($distributionJson -join "`n") | ConvertFrom-Json
+    $s3Origin = @($distribution.Distribution.DistributionConfig.Origins.Items | Where-Object Id -eq 'private-s3')
     if ($distribution.Distribution.DomainName -ne $deployment.DomainName -or
-        $distribution.Distribution.DistributionConfig.Origins.Items[0].DomainName -ne "$($deployment.WebsiteBucket).s3.$($deployment.Region).amazonaws.com") {
+        $s3Origin.Count -ne 1 -or
+        $s3Origin[0].DomainName -ne "$($deployment.WebsiteBucket).s3.$($deployment.Region).amazonaws.com") {
         throw 'CloudFront origin/domain does not match Terraform outputs'
     }
 

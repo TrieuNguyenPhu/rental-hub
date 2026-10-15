@@ -24,7 +24,7 @@ function global:aws {
         'sts get-caller-identity' { '000000000000' }
         's3api head-bucket' { }
         's3api get-bucket-versioning' { '{"Status":"Enabled"}' }
-        'cloudfront get-distribution' { '{"Distribution":{"DomainName":"fixture.cloudfront.net","DistributionConfig":{"Origins":{"Items":[{"DomainName":"fixture.s3.test-region.amazonaws.com"}]}}}}' }
+        'cloudfront get-distribution' { '{"Distribution":{"DomainName":"fixture.cloudfront.net","DistributionConfig":{"Origins":{"Items":[{"Id":"media-api","DomainName":"fixture.execute-api.test-region.amazonaws.com"},{"Id":"private-s3","DomainName":"fixture.s3.test-region.amazonaws.com"}]}}}}' }
         's3api head-object' {
             if ((ValueAfter '--key') -eq 'index.html') { "{`"VersionId`":`"$global:RentalHubTestActive`"}" }
             elseif ($global:RentalHubTestMissingAsset) { $global:LASTEXITCODE = 1 }
