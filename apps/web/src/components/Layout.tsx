@@ -57,7 +57,7 @@ export function Layout() {
           </span>
           <span>
             Estate<span className="brand-accent">Flow</span>
-            <small>REAL ESTATE MANAGER</small>
+            <small>QUẢN LÝ BẤT ĐỘNG SẢN</small>
           </span>
         </NavLink>
         <button
@@ -92,7 +92,7 @@ export function Layout() {
               <p>Dữ liệu trên trình duyệt này</p>
             </div>
           </div>
-          <button className="reset-button" onClick={downloadData}>
+          <button className="reset-button export-button" onClick={downloadData}>
             Xuất dữ liệu
           </button>
           <button
@@ -119,7 +119,7 @@ export function Layout() {
             >
               <Menu size={22} />
             </button>
-            <span className="header-system">Real Estate Management</span>
+            <span className="header-system">EstateFlow</span>
             <ChevronRight size={15} />
             <span>
               {navigation.find((item) => item.to === pathname)?.label ?? 'Không tìm thấy'}
@@ -127,7 +127,7 @@ export function Layout() {
           </div>
           <span className="workspace-label">
             <span />
-            Workspace cá nhân
+            Dữ liệu trên thiết bị này
           </span>
         </header>
         <main id="main-content" tabIndex={-1}>
@@ -141,7 +141,7 @@ export function Layout() {
         </main>
         <footer className="app-footer">
           <span>EstateFlow · Quản lý bất động sản</span>
-          <span>Frontend MVP · Local storage</span>
+          <span>Dữ liệu được lưu trên trình duyệt này</span>
         </footer>
       </div>
       {resetOpen && (
