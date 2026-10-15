@@ -20,7 +20,7 @@ export function BookingForm({
   rooms: Room[]
   buildings: Building[]
   onClose: () => void
-  onSave: (input: BookingInput) => ActionResult
+  onSave: (input: BookingInput) => ActionResult | Promise<ActionResult>
 }) {
   return (
     <FormPanel

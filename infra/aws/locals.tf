@@ -6,6 +6,7 @@ locals {
   buckets = {
     website = "${local.prefix}-website-${data.aws_caller_identity.current.account_id}"
     logs    = "${local.prefix}-logs-${data.aws_caller_identity.current.account_id}"
+    data    = "${local.prefix}-data-${data.aws_caller_identity.current.account_id}"
   }
   deny_http = { for role, name in local.buckets : role => {
     Sid       = "DenyInsecureTransport"

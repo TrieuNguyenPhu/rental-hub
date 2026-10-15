@@ -12,15 +12,22 @@ export function FormPanel({
   title: string
   children: ReactNode
   onClose: () => void
-  onSubmit: (data: FormData) => ActionResult
+  onSubmit: (data: FormData) => ActionResult | Promise<ActionResult>
 }) {
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (busy) return
+    setBusy(true)
     // FormData chỉ đọc các trường khi lưu; không cần state cho từng ô nhập.
-    const result = onSubmit(new FormData(event.currentTarget))
-    if (!result.ok) setError(result.error)
+    try {
+      const result = await onSubmit(new FormData(event.currentTarget))
+      if (!result.ok) setError(result.error)
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Không thể lưu dữ liệu.')
+    } finally { setBusy(false) }
   }
 
   return (
@@ -41,7 +48,7 @@ export function FormPanel({
           <button type="button" className="button secondary" onClick={onClose}>
             Đóng
           </button>
-          <button type="submit" className="button primary">
+          <button type="submit" className="button primary" disabled={busy}>
             Lưu thay đổi
           </button>
         </div>

@@ -8,17 +8,22 @@ import './styles/appShell.css'
 import { createEstateStore } from './store'
 import { browserStorage, createEstatePersistence } from './services/estatePersistence'
 import { uploadHttpImage } from './services/uploadHttpImage'
+import { createRemoteEstateStore } from './services/remoteEstateStore'
 import './styles/dataWorkflows.css'
 
-const services = {
-  estateStore: createEstateStore(createEstatePersistence(browserStorage)),
-  uploadImage: import.meta.env.VITE_STATIC_HOSTING === 'true' ? null : uploadHttpImage,
-}
+const root = createRoot(document.getElementById('root')!)
+const sharedData = import.meta.env.VITE_STATIC_HOSTING === 'true'
+const estateStore = sharedData
+  ? await createRemoteEstateStore().catch((error: Error) => {
+      root.render(<main role="alert">{error.message} <button onClick={() => location.reload()}>Thử lại</button></main>)
+      return null
+    })
+  : createEstateStore(createEstatePersistence(browserStorage))
 
-createRoot(document.getElementById('root')!).render(
+if (estateStore) root.render(
   <StrictMode>
     <BrowserRouter>
-      <App services={services} />
+      <App services={{ estateStore, uploadImage: uploadHttpImage, maxImageBytes: sharedData ? 4 * 1024 * 1024 : 10 * 1024 * 1024, sharedData }} />
     </BrowserRouter>
   </StrictMode>,
 )

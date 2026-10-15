@@ -8,14 +8,16 @@
     "build": "npm run typecheck && vite build --config apps/web/vite.config.ts",
     "lint": "oxlint",
     "preview": "vite preview --config apps/web/vite.config.ts",
-    "test": "node --experimental-strip-types --test tests/architecture/*.test.ts tests/unit/*.test.ts tests/media/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/architecture/*.test.ts tests/unit/*.test.ts tests/media/*.test.ts tests/aws-media/*.test.ts",
     "typecheck": "tsc -b && tsc -p tests/tsconfig.json",
     "test:e2e": "playwright test --config tests/playwright.config.ts",
     "build:media": "tsc -p apps/media/tsconfig.json",
+    "build:aws-media": "tsc -p apps/aws-media/tsconfig.json && node ops/aws/build-media.mjs",
     "start:media": "node .local/build/media/apps/media/src/main.js",
     "dev:media": "node --env-file-if-exists=.env --experimental-strip-types apps/media/src/main.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "lucide-react": "^1.55.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -29,6 +31,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "^0.28.2",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"

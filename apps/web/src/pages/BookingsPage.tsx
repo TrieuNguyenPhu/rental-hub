@@ -137,8 +137,8 @@ export function BookingsPage() {
           rooms={rooms}
           buildings={buildings}
           onClose={() => setEditing(null)}
-          onSave={(input) => {
-            const result = editing === 'new' ? addBooking(input) : updateBooking(editing.id, input)
+          onSave={async (input) => {
+            const result = editing === 'new' ? await addBooking(input) : await updateBooking(editing.id, input)
             if (result.ok) {
               setMessage(
                 editing === 'new'
@@ -157,8 +157,8 @@ export function BookingsPage() {
           label="Hủy lịch đặt"
           description={`Hủy lịch đặt của ${cancelling.customerName} (${dateLabel(cancelling.checkIn)} – ${dateLabel(cancelling.checkOut)})? Thao tác này không thể hoàn tác. Lịch vẫn được giữ trong lịch sử.`}
           onClose={() => setCancelling(null)}
-          onConfirm={() => {
-            const result = cancelBooking(cancelling.id)
+          onConfirm={async () => {
+            const result = await cancelBooking(cancelling.id)
             if (result.ok) {
               setMessage('Đã hủy lịch đặt phòng. Lịch sử được giữ nguyên.')
               setCancelling(null)
