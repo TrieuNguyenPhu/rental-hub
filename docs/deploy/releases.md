@@ -2,6 +2,8 @@
 
 ## VPS
 
+Quy trình đã được kiểm thử trong sandbox Linux và trên EC2 thử nghiệm trước đây; chưa nghiệm thu trên VPS của Task 2.
+
 Lệnh chạy bằng deploy user trên VPS Ubuntu; config `/etc/rental-hub/deploy.env` thuộc deploy/root, không cho group/world ghi. APP_ROOT phải có sẵn `releases`, `shared/assets`, `shared/images`, `shared/tmp` là thư mục thật. Các lệnh dùng chung lock 30 giây, không chạy bằng root.
 
 ```bash
@@ -24,20 +26,20 @@ Task 3 giữ nguyên. Không thêm EC2, API ảnh, bucket hoặc kết nối t�
 
 ```powershell
 # Xem bản dự kiến; build/check diễn ra nhưng -WhatIf không upload.
-.\scripts\deploy-aws.ps1 -WhatIf
+.\ops\aws\deploy-aws.ps1 -WhatIf
 # Cập nhật khi sẵn sàng.
-.\scripts\deploy-aws.ps1
+.\ops\aws\deploy-aws.ps1 -Confirm:$false
 # Xem các version index (điền bucket đã có từ Terraform outputs).
 aws s3api list-object-versions --bucket ACTUAL_BUCKET --prefix index.html
 # Chọn VersionId từ lần triển khai tốt đã ghi lại.
-.\scripts\deploy-aws.ps1 -RollbackVersionId 'ACTUAL_VERSION_ID'
+.\ops\aws\deploy-aws.ps1 -RollbackVersionId 'ACTUAL_VERSION_ID' -Confirm:$false
 ```
 
 Script xác minh account/origin/domain và bucket versioning; lưu index hiện tại trước switch, giữ hashed assets và invalidation sau cùng. Rollback kiểm tra assets của index cũ còn trong S3, copy đúng version thành index mới, invalidation và smoke. Smoke lỗi tự phục hồi index vừa rời; không rebuild bản cũ. Các lệnh chỉ chạy từ một checkout/máy vận hành; lock local không khóa được máy khác.
 
 Giới hạn rollback AWS: index + hashed assets; script từ chối ghi đè root public files (fonts/favicon) nếu bytes thay đổi. Khi đổi chúng, dùng filename mới để index cũ vẫn hoạt động. File cũ được giữ lại. CloudFront hiện có fallback 403/404 sang index 200, nên không dùng VPS smoke yêu cầu missing asset 404 để đánh giá lại Task 3.
 
-Trong lần triển khai công việc này chỉ kiểm thử script AWS bằng transport giả. Chưa chạy cập nhật/rollback hoặc fault drill trên AWS thật; không ghi nhận là A → B → A trên AWS.
+Script AWS được kiểm thử bằng transport giả và đã diễn tập rollback A → B → A → B trên S3/CloudFront thật sau đó; xem [hồ sơ Task 4](../acceptance/task-4.md). Thử nghiệm đó không chứng minh quy trình VPS của Task 2 đã hoàn thành.
 
 ## Kiểm thử an toàn
 

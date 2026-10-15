@@ -2,7 +2,7 @@
 
 Triển khai frontend ban đầu: 13/10/2026. Bổ sung ảnh và dữ liệu chung: 15/10/2026. Account: `287872994400`. Region: `ap-southeast-2` (Sydney).
 
-Trạng thái: **Task 3 hoàn thành**. Đã chạy lại script deploy sau khi dọn code và xác minh bản production qua URL AWS. Task 2 (VPS) và diễn tập rollback của Task 4 nằm ngoài lần nghiệm thu này.
+Trạng thái: **Task 3 hoàn thành**. Đã chạy lại script deploy sau khi dọn code và xác minh bản production qua URL AWS. Task 2 (VPS) chưa hoàn thành. Diễn tập rollback của Task 4 được ghi riêng trong [hồ sơ Task 4](acceptance/task-4.md).
 
 Website: **https://d2pqq5rtvfmo3w.cloudfront.net**. CloudFront distribution: `E1V0VFFK749XB0`.
 
@@ -147,7 +147,7 @@ aws s3 cp restored-index.html s3://npt-room-finder-prod-website-287872994400/ind
 aws cloudfront create-invalidation --distribution-id E1V0VFFK749XB0 --paths '/*'
 ```
 
-Đây là rollback HTML/asset hash; khi thay đổi font/favicon cùng đường dẫn, cần phục hồi version tương ứng. Chưa diễn tập rollback trên website đang chạy. Không xóa version cũ hay asset cũ trong Task 3.
+Đây là rollback HTML/asset hash; khi thay đổi font/favicon cùng đường dẫn, cần phục hồi version tương ứng. Tại thời điểm nghiệm thu Task 3, rollback live chưa được diễn tập; lần diễn tập sau đó được ghi trong [Task 4](acceptance/task-4.md). Không xóa version cũ hay asset cũ trong Task 3.
 
 - S3 direct URL trả 403: đúng thiết kế private; truy cập qua CloudFront.
 - CloudFront trả 403/HTML thay JS: kiểm tra object tồn tại, origin OAC và bucket policy ARN, sau đó invalidate.

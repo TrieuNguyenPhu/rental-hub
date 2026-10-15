@@ -19,8 +19,8 @@ Ruling: Task 4 AWS uses its existing S3/CloudFront architecture, with separate v
 
 ## Progress
 
-- Task 2: implementation and Linux/Nginx/systemd/HTTPS/upload sandbox verification complete; public VPS/SSH/domain evidence pending a free host.
-- Task 4: VPS atomic release/rollback fixtures and AWS mocked VersionId rollback complete; live VPS/AWS evidence pending.
-- Task 5: 46 unit/API tests, lint/typecheck, Playwright 13/13 on local HTTPS, and sandbox 502/403/404 recovery complete; public evidence pending.
+- Task 2: implementation and Linux/Nginx/systemd/HTTPS/upload sandbox verification complete; deployment and acceptance on the independent VPS remain pending.
+- Task 4: VPS atomic release/rollback fixtures and AWS mocked VersionId rollback complete at this checkpoint; later AWS live evidence is recorded in `task-4.md`. Independent VPS evidence remains pending.
+- Task 5: 46 unit/API tests, lint/typecheck, Playwright 13/13 on local HTTPS, and sandbox 502/403/404 recovery complete at this checkpoint; independent VPS evidence remains pending.
 
 Local evidence SHA: `67c5a2978f2226175097f130f7391aa7045d1940`. Nginx ran as `www-data`; media ran under a separate unprivileged systemd identity; a disposable Basic Auth fixture protected HTTPS upload. No AWS API calls, paid VPS, domain, or DNS changes were made. Task 3 remains accepted by the user and untouched.

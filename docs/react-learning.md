@@ -37,7 +37,7 @@ Hook được gọi ở đầu component hoặc custom Hook, theo cùng thứ t�
 
 ## Luồng chạy và lựa chọn triển khai
 
-1. `main.tsx` tạo persistence và Zustand store; bản local/VPS dùng HTTP upload, bản AWS tắt upload rồi truyền các adapter qua `App`.
+1. `main.tsx` tạo Zustand store dùng localStorage cho local/VPS hoặc remote store gọi `/api/estate` cho AWS; cả hai truyền hàm HTTP upload vào `App`. AWS giới hạn ảnh đầu vào 4 MiB, local/VPS 10 MiB.
 2. `App.tsx` đặt `ServicesProvider`, router chọn trang; `Layout` hiển thị điều hướng và `<Outlet>`.
 3. Trang đọc dữ liệu qua `useEstateStore(selector)`. Selector chọn riêng `buildings`, `rooms`, `bookings` hoặc action, nên một thay đổi không liên quan không bắt trang render lại chỉ vì đã chọn toàn bộ store.
 4. Trang truyền dữ liệu và callback qua props cho form, dialog và các component hiển thị. Phần khách/phòng của booking được dùng chung giữa hai bảng; mỗi trang vẫn quyết định dữ liệu và thao tác của mình.
@@ -58,7 +58,7 @@ Ví dụ trong `BookingsPage`, `query` là state vì người dùng có thể s�
 | `apps/web/src/pages/` | Bốn màn hình: `DashboardPage` tổng quan, `BuildingsPage` quản lý tòa nhà, `RoomsPage` quản lý phòng, `BookingsPage` quản lý lịch. Trang giữ state UI và nối sự kiện với actions. |
 | `apps/web/src/components/` | Các phần giao diện dùng lại: `Layout`, form, `Modal`, `ConfirmDialog`, `ImageUploader`, `Badge`, các phần trang trong `PageParts.tsx` và cell trong `BookingDetails.tsx`. |
 | `apps/web/src/domain/` | Quy tắc ngày, kiểm tra dữ liệu, chồng lịch, actions CRUD, dữ liệu demo và hợp đồng với adapter. Không chứa React. |
-| `apps/web/src/services/` | Adapter localStorage và HTTP upload ảnh. |
+| `apps/web/src/services/` | Adapter localStorage, remote AWS store và HTTP upload ảnh. |
 | `apps/web/src/utils/` | Định dạng ngày/tiền và đọc trường `FormData`; không chứa state. |
 | `apps/web/src/index.css`, `fonts.css`, `public/` | Giao diện CSS và tài nguyên tĩnh. |
 | `packages/domain/models.ts` | Kiểu dữ liệu dùng chung giữa web và media. |

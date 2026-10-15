@@ -6,4 +6,4 @@ Lambda lưu tòa nhà, phòng và lịch đặt trong `estate.json` ở **data b
 
 Đây là **demo công khai không xác thực**: bất kỳ người truy cập nào cũng xem, thêm, sửa, xóa dữ liệu và tải ảnh. Lịch đặt chứa tên/số điện thoại; chỉ dùng dữ liệu giả. API Gateway giới hạn trung bình 2 request/giây, burst 10; Lambda concurrency 2. Không dùng cho dữ liệu thật trước khi thêm đăng nhập, phân quyền và giới hạn lưu trữ.
 
-Local/VPS vẫn lưu CRUD trong localStorage và dùng media API Node/Sharp, tối đa 10 MiB. Dữ liệu local cũ không tự chuyển lên AWS. Deploy AWS build Lambda trên Linux rồi upload assets web trước `index.html`; script kiểm tra API trước khi chuyển index. Rollback hiện khôi phục `index.html` từ S3 VersionId; dữ liệu chung và ảnh giữ nguyên.
+Bản local lưu CRUD trong localStorage và dùng media API Node/Sharp, tối đa 10 MiB; VPS của Task 2 dự kiến dùng cùng cách lưu nhưng chưa triển khai. Dữ liệu local cũ không tự chuyển lên AWS. Deploy AWS build Lambda trên Linux rồi upload assets web trước `index.html`; script kiểm tra API trước khi chuyển index. Rollback hiện khôi phục `index.html` từ S3 VersionId; dữ liệu chung và ảnh giữ nguyên.

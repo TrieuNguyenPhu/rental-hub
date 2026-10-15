@@ -1,6 +1,6 @@
 # Cấu trúc dự án
 
-`apps/web/src/main.tsx` chọn Zustand store localStorage cho local/VPS hoặc remote store gọi `/api/estate` cho AWS, rồi truyền store và HTTP upload vào `App`. Các trang đọc store qua custom Hook `useEstateStore`. Quy tắc nghiệp vụ nằm trong `domain/`, độc lập với React và các adapter.
+`apps/web/src/main.tsx` chọn Zustand store localStorage cho bản local và VPS dự kiến, hoặc remote store gọi `/api/estate` cho AWS, rồi truyền store và HTTP upload vào `App`. Các trang đọc store qua custom Hook `useEstateStore`. Quy tắc nghiệp vụ nằm trong `domain/`, độc lập với React và các adapter.
 
 | Thư mục/file | Vai trò |
 | --- | --- |
@@ -22,7 +22,7 @@
 
 `bookingRoomError` là quy tắc chung cho khả năng nhận booking của phòng/tòa nhà. Form, nút tạo lịch và validation khi lưu đều dùng quy tắc này. CRUD actions chỉ nhận hàm đọc state và commit; Zustand giữ state cho React và gọi persistence sau mutation. Persistence giữ khóa `room-finder-estate-v1`, đọc version 0/1 và ghi version 1.
 
-Bản AWS dùng CloudFront + S3 website cho frontend/ảnh; `/api/*` tới API Gateway HTTP API + Lambda. Lambda lưu metadata trong S3 data bucket riêng, có versioning và conditional writes. Mọi người cùng thấy dữ liệu/ảnh và có thể chỉnh sửa vì đây là demo công khai không xác thực. Local/VPS vẫn dùng localStorage + media API. Xem [giải thích React](react-learning.md) và [triển khai AWS](task3-aws-deployment.md).
+Bản AWS dùng CloudFront + S3 website cho frontend/ảnh; `/api/*` tới API Gateway HTTP API + Lambda. Lambda lưu metadata trong S3 data bucket riêng, có versioning và conditional writes. Mọi người cùng thấy dữ liệu/ảnh và có thể chỉnh sửa vì đây là demo công khai không xác thực. Bản local dùng localStorage + media API; VPS của Task 2 dự kiến dùng cùng kiến trúc này nhưng chưa triển khai. Xem [giải thích React](react-learning.md) và [triển khai AWS](task3-aws-deployment.md).
 
 ## Terraform state
 

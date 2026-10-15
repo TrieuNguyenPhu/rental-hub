@@ -2,7 +2,7 @@
 
 Giải thích các khái niệm React, Hooks và cấu trúc mã nguồn: [React trong bài EstateFlow](docs/react-learning.md).
 
-Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần. Local/VPS lưu CRUD trong trình duyệt và upload ảnh qua API Node/Sharp. Bản AWS dùng S3/CloudFront, API Gateway và Lambda để lưu dữ liệu chung và tải ảnh WebP lên S3. Font được lưu trong `apps/web/public/fonts/`.
+Ứng dụng quản lý bất động sản phục vụ bài thực tập DevOps. React + TypeScript + Vite, Zustand, React Router, Lucide React và CSS thuần. Bản local lưu CRUD trong trình duyệt và upload ảnh qua API Node/Sharp; VPS dự kiến dùng cùng cách lưu. Bản AWS dùng S3/CloudFront, API Gateway và Lambda để lưu dữ liệu chung và tải ảnh WebP lên S3. Font được lưu trong `apps/web/public/fonts/`.
 
 ## Cài đặt và chạy local
 
@@ -21,7 +21,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 
 ## Production build
 
-Task 2/4/5: xem [VPS độc lập](docs/deploy/vps.md), [deploy/rollback](docs/deploy/releases.md), [runbook sự cố](docs/runbook/troubleshooting.md) và [nghiệm thu](docs/acceptance/demo.md). AWS Task 3 dùng thêm API để hỗ trợ ảnh và dữ liệu chung. Các template/script VPS đã chuẩn bị; chưa có VPS public để nghiệm thu thực tế.
+Task 2 **chưa hoàn thành trên VPS**: đã chuẩn bị [runbook VPS](docs/deploy/vps.md), [script deploy/rollback](docs/deploy/releases.md) và [runbook sự cố](docs/runbook/troubleshooting.md), nhưng chưa nghiệm thu trên VPS của Task 2. Xem [trạng thái và kế hoạch demo](docs/acceptance/demo.md). AWS Task 3 dùng thêm API để hỗ trợ ảnh và dữ liệu chung.
 
 ```bash
 npm run build
@@ -30,7 +30,7 @@ npm run preview
 
 Build chạy TypeScript validation trước khi tạo bản web tại `.local/build/web/` (thư mục sinh tự động, bị Git bỏ qua). Preview phục vụ bản build tại URL Vite in ra, mặc định `http://localhost:4173`.
 
-Ứng dụng dùng BrowserRouter. Khi phục vụ trên static hosting sau này, cần fallback các route về `index.html` để refresh `/buildings`, `/rooms`, `/bookings` hoạt động. Không cấu hình Nginx, VPS, AWS, Docker hoặc CI/CD trong Task 1.
+Ứng dụng dùng BrowserRouter. Nginx và CloudFront đã có cấu hình fallback về `index.html` để refresh `/buildings`, `/rooms`, `/bookings` hoạt động. Phần Task 1 chỉ kiểm thử ứng dụng local; triển khai VPS và AWS được theo dõi riêng.
 
 ## Chức năng
 
@@ -82,7 +82,7 @@ docs/                   # Guides, runbooks and acceptance evidence
 Trong `apps/web/src`, `domain/` chứa quy tắc và actions nghiệp vụ, `services/` chứa adapter lưu trữ/AWS/upload, `components/` và `pages/` là giao diện, còn `store.ts` nối state giao diện với actions. Media server có entry point và các module xử lý ảnh riêng trong `apps/media/src`.
 
 
-## Lưu dữ liệu
+## Lưu dữ liệu local và VPS dự kiến
 
 - Khóa localStorage: `room-finder-estate-v1`.
 - Lưu seed ngay lần đầu mở. Những lần sau khôi phục dữ liệu đã lưu, kể cả các danh sách rỗng; không seed lại sau reload.
@@ -91,6 +91,8 @@ Trong `apps/web/src`, `domain/` chứa quy tắc và actions nghiệp vụ, `ser
 - Khi localStorage bị chặn hoặc đầy, giữ thay đổi trong bộ nhớ và hiện cảnh báo sẽ mất khi tải lại; không hiện thông báo đã lưu. Khi dữ liệu hỏng, giữ nguyên bản gốc và chặn ghi đè cho đến khi xuất dữ liệu rồi xác nhận khôi phục demo.
 - Nút khôi phục tải bản backup trước khi mở xác nhận. Version 0 được đọc tương thích; version 1 được ghi ở mutation tiếp theo; ảnh thiếu được chuẩn hóa thành `[]` trong bộ nhớ.
 - Dữ liệu booking chứa thông tin khách hàng nên chỉ dùng dữ liệu demo cho bài thực tập. localStorage không được mã hóa.
+
+Bản AWS lưu dữ liệu chung qua `/api/estate` và S3, không dùng localStorage cho CRUD. Mọi người truy cập đều có thể xem và sửa dữ liệu demo; chỉ nhập thông tin giả.
 
 ## Kiểm thử tự động
 
