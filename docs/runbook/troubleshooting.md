@@ -1,4 +1,4 @@
-# Task 5 — Chẩn đoán và phục hồi
+# Chẩn đoán và phục hồi
 
 Luôn ghi thời gian, URL, release SHA (`/release.json` và `/api/health`), triệu chứng và thay đổi gần nhất. Giữ SSH/recovery console. Không ghi Authorization, private key hoặc dữ liệu khách thật vào log. Trước sửa Nginx, backup file cấu hình; chỉ reload khi `nginx -t` thành công.
 
@@ -15,14 +15,4 @@ Luôn ghi thời gian, URL, release SHA (`/release.json` và `/api/health`), tri
 | Sai domain/HTTPS | `getent ahosts DOMAIN`, `openssl s_client -connect DOMAIN:443 -servername DOMAIN`, `sudo certbot certificates`, `sudo certbot renew --dry-run` | Sửa A/AAAA/server_name/chain/expiry/clock/443. Không bỏ kiểm tra TLS của production. |
 | Build/candidate fail | Log BUILD, `candidate-media.log`, Nginx candidate log, disk và lock | current phải vẫn là bản cũ. Sửa lỗi rồi build commit mới. Không sửa source trong release hoàn chỉnh. |
 | `RECOVERY FAILED` | `readlink -f /srv/rental-hub/current`, SHA manifest, unit/env/port và public smoke | Khôi phục điều kiện runtime/storage trước, chạy rollback SHA tốt. Không chỉ đổi symlink rồi tuyên bố đã khỏe. |
-| AWS lỗi | CloudFront status/cache/invalidation, S3 object/version và IAM/OAC, Terraform outputs | Dùng `docs/task3-aws-deployment.md` và AWS index rollback. Không sửa Nginx/UFW/VPS để chữa AWS S3/CloudFront. |
-
-## Diễn tập
-
-Chỉ dùng sandbox hoặc cửa sổ demo đã được thống nhất. Mỗi lần một nguyên nhân, chuẩn bị cách phục hồi và backup trước. Không chặn SSH, sửa AWS production hoặc xóa ảnh để tạo lỗi.
-
-`tests/operations/release.sh` kiểm thử build lỗi, candidate lỗi, rollback thiếu runtime, asset collision, activation lỗi, TERM, lock timeout, lần đầu không có previous. Dùng Git, filesystem, Node HTTP và Nginx thật; npm/service manager là fixture. Kết quả này chứng minh orchestration, chưa chứng minh systemd/firewall/VPS công khai.
-
-Diễn tập tích hợp bổ sung: stop Node sandbox gây 502 rồi khởi động lại; đổi quyền file thành 000 gây 403 rồi phục hồi; bỏ SPA fallback gây route 404 rồi phục hồi; cất bundle vào backup để chứng minh build vẫn tồn tại nhưng frontend thiếu JS; truy cập port không listen để phân biệt lỗi kết nối; kiểm tra cert fixture localhost. Với ENOSPC, unit/API tests inject lỗi filesystem, chưa thay cho ổ đĩa production thực sự đầy.
-
-Mẫu evidence: `timestamp | SHA | URL | status/log | nguyên nhân | hành động phục hồi | kiểm tra sau sửa | thời gian phục hồi`. Chỉ đánh dấu diễn tập đã làm khi có kết quả thực; những lệnh trong bảng là hướng dẫn.
+| AWS lỗi | CloudFront status/cache/invalidation, S3 object/version và IAM/OAC, Terraform outputs | Dùng [runbook AWS](../deploy/aws.md) và AWS index rollback. Không sửa Nginx/UFW/VPS để chữa AWS S3/CloudFront. |

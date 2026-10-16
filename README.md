@@ -37,8 +37,8 @@ npm run test:e2e
 | Môi trường | Trạng thái và tài liệu |
 | --- | --- |
 | GCP Compute Engine | [Terraform, deploy lại, rollback và destroy](infra/gcp/README.md). Frontend chạy qua HTTP; upload ảnh bị tắt. |
-| AWS S3/CloudFront | [Terraform và quy trình deploy](docs/task3-aws-deployment.md), [CI/CD](docs/deploy/ci-cd.md). Dữ liệu và ảnh dùng S3/API riêng. |
-| VPS Linux | [Runbook](docs/deploy/vps.md) và [release/rollback](docs/deploy/releases.md); chưa nghiệm thu trên VPS độc lập. |
+| AWS S3/CloudFront | [Terraform, deploy và rollback](docs/deploy/aws.md), [CI/CD](docs/deploy/ci-cd.md). Dữ liệu và ảnh dùng S3/API riêng. |
+| VPS Linux | [Runbook](docs/deploy/vps.md) và [release/rollback](docs/deploy/releases.md); cấu hình mẫu, chưa có VPS đang vận hành. |
 
 Script deploy lại GCP từ repo root:
 
@@ -46,13 +46,11 @@ Script deploy lại GCP từ repo root:
 powershell -ExecutionPolicy Bypass -File ops/gcp/deploy.ps1
 ```
 
-Bản GCP chưa có domain/HTTPS, authentication hoặc lưu dữ liệu chung. Không nhập dữ liệu khách hàng thật hay credentials trên website HTTP. Bản AWS là demo công khai không xác thực; chỉ dùng dữ liệu giả.
+Bản GCP chưa có domain/HTTPS, authentication hoặc lưu dữ liệu chung. Không nhập dữ liệu khách hàng thật hay credentials trên website HTTP. Bản AWS cũng chưa có đăng nhập; chỉ dùng dữ liệu giả.
 
 ## Tài liệu
 
 - [Kiến trúc và ranh giới các môi trường](docs/architecture.md)
-- [Quy tắc chức năng và phạm vi ban đầu](docs/task-brief.md)
-- [Giải thích cấu trúc React](docs/react-learning.md)
-- [API ảnh và dữ liệu AWS](docs/task3-static-images.md)
+- [Vận hành AWS](docs/deploy/aws.md)
+- [Triển khai và phát hành VPS](docs/deploy/vps.md)
 - [Xử lý sự cố](docs/runbook/troubleshooting.md)
-- [Hồ sơ kiểm thử và nghiệm thu](docs/acceptance/)
