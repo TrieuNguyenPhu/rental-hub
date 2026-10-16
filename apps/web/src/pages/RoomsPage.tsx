@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DoorOpen } from 'lucide-react'
 import { useEstateStore } from '../AppContext'
-import type { Room } from '../../../../packages/domain/models.ts'
+import type { Room, RoomInput } from '../../../../packages/domain/models.ts'
 import { RoomForm } from '../components/RoomForm'
 import { Badge } from '../components/Badge'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -26,12 +26,31 @@ export function RoomsPage() {
   const [editing, setEditing] = useState<Room | 'new' | null>(null)
   const [deleting, setDeleting] = useState<Room | null>(null)
   const [message, setMessage] = useState('')
-  const filtered = rooms.filter(
+  const visibleRooms = rooms.filter(
     (room) =>
       (!buildingId || room.buildingId === buildingId) &&
       (!status || room.status === status) &&
       room.roomNumber.toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi')),
   )
+
+  async function handleSave(room: Room | 'new', input: RoomInput) {
+    const result = room === 'new' ? await addRoom(input) : await updateRoom(room.id, input)
+    if (result.ok) {
+      setMessage(room === 'new' ? 'Đã thêm phòng.' : 'Đã cập nhật phòng.')
+      setEditing(null)
+    }
+    return result
+  }
+
+  async function handleDelete(room: Room) {
+    const result = await deleteRoom(room.id)
+    if (result.ok) {
+      setMessage('Đã xóa phòng.')
+      setDeleting(null)
+    }
+    return result
+  }
+
   return (
     <div className="data-page">
       <PageHeading
@@ -70,9 +89,9 @@ export function RoomsPage() {
             <option value="occupied">Đang sử dụng</option>
             <option value="maintenance">Bảo trì</option>
           </select>
-          <span className="result-count">{filtered.length} phòng</span>
+          <span className="result-count">{visibleRooms.length} phòng</span>
         </div>
-        {filtered.length ? (
+        {visibleRooms.length ? (
           <div className="table-scroll" tabIndex={0} role="region" aria-label="Bảng phòng">
             <table>
               <thead>
@@ -87,7 +106,7 @@ export function RoomsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((room) => (
+                {visibleRooms.map((room) => (
                   <tr key={room.id}>
                     <td>
                       <div className="entity-cell">
@@ -141,14 +160,7 @@ export function RoomsPage() {
           room={editing === 'new' ? undefined : editing}
           buildings={buildings}
           onClose={() => setEditing(null)}
-          onSave={async (input) => {
-            const result = editing === 'new' ? await addRoom(input) : await updateRoom(editing.id, input)
-            if (result.ok) {
-              setMessage(editing === 'new' ? 'Đã thêm phòng.' : 'Đã cập nhật phòng.')
-              setEditing(null)
-            }
-            return result
-          }}
+          onSave={(input) => handleSave(editing, input)}
         />
       )}
       {deleting && (
@@ -156,14 +168,7 @@ export function RoomsPage() {
           title="Xóa phòng?"
           description={`Bạn muốn xóa phòng ${deleting.roomNumber}? Phòng có booking, kể cả đã hủy, sẽ được giữ lại để bảo toàn lịch sử.`}
           onClose={() => setDeleting(null)}
-          onConfirm={async () => {
-            const result = await deleteRoom(deleting.id)
-            if (result.ok) {
-              setMessage('Đã xóa phòng.')
-              setDeleting(null)
-            }
-            return result
-          }}
+          onConfirm={() => handleDelete(deleting)}
         />
       )}
     </div>

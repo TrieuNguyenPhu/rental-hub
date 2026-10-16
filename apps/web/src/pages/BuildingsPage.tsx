@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Building2 } from 'lucide-react'
 import { useEstateStore, useServices } from '../AppContext'
-import type { Building } from '../../../../packages/domain/models.ts'
+import type { Building, BuildingInput } from '../../../../packages/domain/models.ts'
 import { BuildingForm } from '../components/BuildingForm'
 import { Badge } from '../components/Badge'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -24,9 +24,28 @@ export function BuildingsPage() {
   const [editing, setEditing] = useState<Building | 'new' | null>(null)
   const [deleting, setDeleting] = useState<Building | null>(null)
   const [message, setMessage] = useState('')
-  const filtered = buildings.filter((item) =>
+  const visibleBuildings = buildings.filter((item) =>
     item.name.toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi')),
   )
+
+  async function handleSave(building: Building | 'new', input: BuildingInput) {
+    const result = building === 'new' ? await addBuilding(input) : await updateBuilding(building.id, input)
+    if (result.ok) {
+      setMessage(building === 'new' ? 'Đã thêm tòa nhà.' : 'Đã cập nhật tòa nhà.')
+      setEditing(null)
+    }
+    return result
+  }
+
+  async function handleDelete(building: Building) {
+    const result = await deleteBuilding(building.id)
+    if (result.ok) {
+      setMessage('Đã xóa tòa nhà.')
+      setDeleting(null)
+    }
+    return result
+  }
+
   return (
     <div className="data-page">
       <PageHeading
@@ -40,10 +59,10 @@ export function BuildingsPage() {
         <div className="table-toolbar">
           <SearchInput value={query} onChange={setQuery} placeholder="Tìm theo tên tòa nhà..." />
           <span className="result-count">
-            {filtered.length} / {buildings.length} tòa nhà
+            {visibleBuildings.length} / {buildings.length} tòa nhà
           </span>
         </div>
-        {filtered.length ? (
+        {visibleBuildings.length ? (
           <div className="table-scroll" tabIndex={0} role="region" aria-label="Bảng tòa nhà">
             <table>
               <thead>
@@ -57,7 +76,7 @@ export function BuildingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((building) => (
+                {visibleBuildings.map((building) => (
                   <tr key={building.id}>
                     <td>
                       <div className="entity-cell">
@@ -110,15 +129,7 @@ export function BuildingsPage() {
         <BuildingForm
           building={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
-          onSave={async (input) => {
-            const result =
-              editing === 'new' ? await addBuilding(input) : await updateBuilding(editing.id, input)
-            if (result.ok) {
-              setMessage(editing === 'new' ? 'Đã thêm tòa nhà.' : 'Đã cập nhật tòa nhà.')
-              setEditing(null)
-            }
-            return result
-          }}
+          onSave={(input) => handleSave(editing, input)}
         />
       )}
       {deleting && (
@@ -126,14 +137,7 @@ export function BuildingsPage() {
           title="Xóa tòa nhà?"
           description={`Bạn muốn xóa “${deleting.name}”? Chỉ có thể xóa tòa nhà không còn phòng liên kết.`}
           onClose={() => setDeleting(null)}
-          onConfirm={async () => {
-            const result = await deleteBuilding(deleting.id)
-            if (result.ok) {
-              setMessage('Đã xóa tòa nhà.')
-              setDeleting(null)
-            }
-            return result
-          }}
+          onConfirm={() => handleDelete(deleting)}
         />
       )}
     </div>
