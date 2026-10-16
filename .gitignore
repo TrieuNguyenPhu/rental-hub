@@ -32,13 +32,11 @@ playwright-report/
 *.tfstate
 *.tfstate.*
 *.tfplan
-**/.terraform.tfstate.lock.info
 infra/gcp/terraform.tfvars
 infra/gcp/backend.tf
 infra/aws/*.local.*
 .local/
 server-dist/
-apps/web/dist/
 apps/media/build/
 !.env.example
 !ops/deploy/env/*.env.example
