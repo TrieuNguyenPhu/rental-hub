@@ -1,0 +1,7 @@
+# Activate as backend.tf only after creating the private, versioned bucket.
+terraform {
+  backend "gcs" {
+    bucket = "rental-hub-tfstate-973198905935"
+    prefix = "gcp/production"
+  }
+}

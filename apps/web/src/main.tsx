@@ -23,7 +23,7 @@ const estateStore = sharedData
 if (estateStore) root.render(
   <StrictMode>
     <BrowserRouter>
-      <App services={{ estateStore, uploadImage: uploadHttpImage, maxImageBytes: sharedData ? 4 * 1024 * 1024 : 10 * 1024 * 1024, sharedData }} />
+      <App services={{ estateStore, uploadImage: import.meta.env.VITE_DISABLE_UPLOAD === 'true' ? null : uploadHttpImage, maxImageBytes: sharedData ? 4 * 1024 * 1024 : 10 * 1024 * 1024, sharedData }} />
     </BrowserRouter>
   </StrictMode>,
 )
