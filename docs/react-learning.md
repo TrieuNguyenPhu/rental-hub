@@ -8,6 +8,18 @@ Tài liệu này nối các khái niệm React với mã nguồn đang chạy. R
 
 Trong mỗi component, đọc theo thứ tự: **props → Hooks/state → dữ liệu tính từ state → hàm xử lý sự kiện → JSX**. Các chú thích trong `RoomForm`, `FormPanel`, `Modal`, `ImageUploader`, `AppContext` và `BookingsPage` đánh dấu những quyết định React dễ gây nhầm lẫn. JSX đã được xuống dòng theo cấu trúc thẻ để thấy rõ component cha, con và nhánh hiển thị.
 
+### Thử đọc một trang từ đầu đến cuối
+
+Mở `apps/web/src/pages/BuildingsPage.tsx` và theo dõi hai thao tác: tìm kiếm và thêm tòa nhà.
+
+1. Gõ tên tòa nhà vào `SearchInput`. Đây là **component con** nhận `value={query}` và `onChange={setQuery}` qua **props**. Sự kiện `onChange` cập nhật **state** `query` bằng `useState`.
+2. React render lại `BuildingsPage`. `visibleBuildings` được tính lại từ `buildings` và `query`; nó không phải state riêng. JSX dùng `visibleBuildings.length ? ... : ...` để **hiện bảng hoặc thông báo rỗng**.
+3. Bấm “Thêm tòa nhà”. Sự kiện `onAdd` đặt `editing` thành `'new'`, nên nhánh `{editing && <BuildingForm ... />}` xuất hiện.
+4. `BuildingForm` nhận `onSave` qua props. Khi bấm Lưu, `FormPanel` xử lý `onSubmit`, đọc dữ liệu từ form và gọi `handleSave` của trang.
+5. `handleSave` gọi `addBuilding`. Nếu action thành công, trang đóng form và hiện thông báo; store cập nhật `buildings`, khiến danh sách render lại. Nếu thất bại, `FormPanel` giữ form mở và hiện lỗi.
+
+`useEstateStore` trông giống Hook của React nhưng là **custom Hook** của dự án: nó đọc store Zustand qua context. Hãy học `useState` với `query` trước, sau đó xem `AppContext.ts` để hiểu dữ liệu dùng chung.
+
 ## Khái niệm cơ bản
 
 | Khái niệm | Cách hoạt động | Áp dụng trong bài và lý do |
@@ -45,7 +57,7 @@ Hook được gọi ở đầu component hoặc custom Hook, theo cùng thứ t�
 
 Form dùng `FormData` cho phần lớn trường chỉ cần đọc lúc submit. Riêng `RoomForm` dùng `useState` cho tòa nhà được chọn vì giới hạn tầng và gợi ý cần đổi ngay khi người dùng chọn tòa nhà. Bộ lọc được tính trực tiếp trong render: đây là dữ liệu dẫn xuất, không cần `useEffect` hay một state thứ hai. `Modal` dùng effect/ref vì `<dialog>` và focus là API của trình duyệt nằm ngoài JSX.
 
-Ví dụ trong `BookingsPage`, `query` là state vì người dùng có thể sửa nó. `filtered` là phép tính từ `bookings`, `status` và `query`, nên không cần setter riêng. Nút Hủy là event handler mở `ConfirmDialog`; hộp thoại chỉ tồn tại khi `cancelling` có giá trị. Đây là bốn khái niệm cùng hoạt động: state, event, props và conditional rendering.
+Ví dụ trong `BookingsPage`, `query` là state vì người dùng có thể sửa nó. `visibleBookings` là phép tính từ `bookings`, `status` và `query`, nên không cần setter riêng. Nút Hủy là event handler mở `ConfirmDialog`; hộp thoại chỉ tồn tại khi `cancelling` có giá trị. Đây là bốn khái niệm cùng hoạt động: state, event, props và conditional rendering.
 
 ## Vai trò thư mục và file chính
 

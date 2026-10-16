@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { useEstateStore } from '../AppContext'
-import type { Booking } from '../../../../packages/domain/models.ts'
+import type { Booking, BookingInput } from '../../../../packages/domain/models.ts'
 import { bookingRoomError } from '../domain/validation'
 import { BookingForm } from '../components/BookingForm'
 import { BookingCustomerCell, BookingRoomCell } from '../components/BookingDetails'
@@ -30,7 +30,7 @@ export function BookingsPage() {
   const [message, setMessage] = useState('')
   // Danh sách lọc được tính từ state hiện có; lưu thêm state sẽ dễ bị lệch dữ liệu.
   const canBook = rooms.some((room) => !bookingRoomError(room, buildings))
-  const filtered = bookings
+  const visibleBookings = bookings
     .filter(
       (booking) =>
         (!status || booking.status === status) &&
@@ -39,6 +39,27 @@ export function BookingsPage() {
           .includes(query.trim().toLocaleLowerCase('vi')),
     )
     .sort((a, b) => b.checkIn.localeCompare(a.checkIn))
+
+  async function handleSave(booking: Booking | 'new', input: BookingInput) {
+    const result = booking === 'new' ? await addBooking(input) : await updateBooking(booking.id, input)
+    if (result.ok) {
+      setMessage(
+        booking === 'new' ? 'Đã tạo và xác nhận lịch đặt phòng.' : 'Đã cập nhật lịch đặt phòng.',
+      )
+      setEditing(null)
+    }
+    return result
+  }
+
+  async function handleCancel(booking: Booking) {
+    const result = await cancelBooking(booking.id)
+    if (result.ok) {
+      setMessage('Đã hủy lịch đặt phòng. Lịch sử được giữ nguyên.')
+      setCancelling(null)
+    }
+    return result
+  }
+
   return (
     <div className="data-page">
       <PageHeading
@@ -70,9 +91,9 @@ export function BookingsPage() {
             <option value="confirmed">Đã xác nhận</option>
             <option value="cancelled">Đã hủy</option>
           </select>
-          <span className="result-count">{filtered.length} lịch đặt</span>
+          <span className="result-count">{visibleBookings.length} lịch đặt</span>
         </div>
-        {filtered.length ? (
+        {visibleBookings.length ? (
           <div className="table-scroll" tabIndex={0} role="region" aria-label="Bảng lịch đặt">
             <table>
               <thead>
@@ -86,7 +107,7 @@ export function BookingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((booking) => {
+                {visibleBookings.map((booking) => {
                   const room = rooms.find((item) => item.id === booking.roomId)
                   return (
                     <tr key={booking.id}>
@@ -137,18 +158,7 @@ export function BookingsPage() {
           rooms={rooms}
           buildings={buildings}
           onClose={() => setEditing(null)}
-          onSave={async (input) => {
-            const result = editing === 'new' ? await addBooking(input) : await updateBooking(editing.id, input)
-            if (result.ok) {
-              setMessage(
-                editing === 'new'
-                  ? 'Đã tạo và xác nhận lịch đặt phòng.'
-                  : 'Đã cập nhật lịch đặt phòng.',
-              )
-              setEditing(null)
-            }
-            return result
-          }}
+          onSave={(input) => handleSave(editing, input)}
         />
       )}
       {cancelling && (
@@ -157,14 +167,7 @@ export function BookingsPage() {
           label="Hủy lịch đặt"
           description={`Hủy lịch đặt của ${cancelling.customerName} (${dateLabel(cancelling.checkIn)} – ${dateLabel(cancelling.checkOut)})? Thao tác này không thể hoàn tác. Lịch vẫn được giữ trong lịch sử.`}
           onClose={() => setCancelling(null)}
-          onConfirm={async () => {
-            const result = await cancelBooking(cancelling.id)
-            if (result.ok) {
-              setMessage('Đã hủy lịch đặt phòng. Lịch sử được giữ nguyên.')
-              setCancelling(null)
-            }
-            return result
-          }}
+          onConfirm={() => handleCancel(cancelling)}
         />
       )}
     </div>
