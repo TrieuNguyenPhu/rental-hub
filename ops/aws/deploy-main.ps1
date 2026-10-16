@@ -19,7 +19,7 @@ try {
     }
     $account = (& aws sts get-caller-identity --query Account --output text).Trim()
     if ($LASTEXITCODE -ne 0 -or $account -ne '287872994400') { throw 'Wrong AWS account.' }
-    if (-not $PSCmdlet.ShouldProcess('CloudFront Task 3', "Deploy main $sha")) { return }
+    if (-not $PSCmdlet.ShouldProcess('CloudFront production', "Deploy main $sha")) { return }
     & npm ci --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw 'Could not install locked dependencies; production was not changed.' }
     & "$PSScriptRoot/deploy-aws.ps1" -ReleaseSha $sha

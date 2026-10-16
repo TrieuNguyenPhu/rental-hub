@@ -20,10 +20,15 @@ const estateStore = sharedData
     })
   : createEstateStore(createEstatePersistence(browserStorage))
 
-if (estateStore) root.render(
-  <StrictMode>
-    <BrowserRouter>
-      <App services={{ estateStore, uploadImage: import.meta.env.VITE_DISABLE_UPLOAD === 'true' ? null : uploadHttpImage, maxImageBytes: sharedData ? 4 * 1024 * 1024 : 10 * 1024 * 1024, sharedData }} />
-    </BrowserRouter>
-  </StrictMode>,
-)
+if (estateStore) {
+  const uploadImage = import.meta.env.VITE_DISABLE_UPLOAD === 'true' ? null : uploadHttpImage
+  const maxImageBytes = (sharedData ? 4 : 10) * 1024 * 1024
+
+  root.render(
+    <StrictMode>
+      <BrowserRouter>
+        <App services={{ estateStore, uploadImage, maxImageBytes, sharedData }} />
+      </BrowserRouter>
+    </StrictMode>,
+  )
+}

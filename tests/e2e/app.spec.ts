@@ -63,6 +63,12 @@ test('building create, validation, edit, search, delete confirmation and persist
   await expect(page.getByRole('alert')).toContainText('đang có phòng liên kết')
 })
 
+test('creating a building works without randomUUID on public HTTP', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(Crypto.prototype, 'randomUUID', { value: undefined }))
+  await createBuilding(page)
+  await expect(page.getByText('QA Tower', { exact: true })).toBeVisible()
+})
+
 test('room create, edit, combined filters, linked building guard and delete', async ({ page }) => {
   await createBuilding(page)
   await createRoom(page)

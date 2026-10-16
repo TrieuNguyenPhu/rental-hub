@@ -1,12 +1,8 @@
-# Task 2 — VPS Linux độc lập
+# VPS Linux
 
-**Trạng thái: Task 2 chưa hoàn thành.** AWS Task 3 dùng S3/CloudFront và có Terraform riêng trong `infra/aws`. Tài liệu dưới đây hướng dẫn triển khai VPS Linux bằng các template trong `ops/deploy/`; cấu hình Terraform EC2 thử nghiệm cũ đã được bỏ khỏi source.
+Runbook này dùng các template trong `ops/deploy/` cho một VPS Ubuntu 24.04. Hiện chưa có VPS được quản lý theo runbook này; kiểm tra môi trường và dữ liệu sẵn có trước khi áp dụng. AWS và GCP có cấu hình deploy riêng.
 
 ## Điều kiện thực hiện
-
-Chưa có bằng chứng triển khai trên VPS của Task 2. Các bước dưới đây là runbook, không phải biên bản nghiệm thu. EC2 từng được dùng để thử quy trình bằng AWS credit; lần thử đó không thay cho VPS độc lập của Task 2.
-
-Oracle có [Always Free compute](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm), nhưng cần tài khoản được xác minh, có thể thiếu capacity và có thể thu hồi máy idle. Người dùng tự hoàn tất đăng ký/xác minh thẻ. Chọn tài nguyên có nhãn Always Free theo quota hiện trên console; không mặc định mọi VM là miễn phí. Ubuntu WSL dùng cho thử nghiệm tại máy, chưa đáp ứng điều kiện VPS public.
 
 Cần IP/SSH alias, user có sudo, public key của deploy user, địa chỉ IP quản trị; domain là tùy chọn. Không gửi private key/mật khẩu vào chat hoặc Git. Với nhà cung cấp có firewall riêng, cho phép TCP 22 từ IP quản trị và 80/443 từ Internet; không mở 3001, 3002, 8081 hoặc Vite.
 
@@ -108,7 +104,7 @@ ss -lntp
 bash ops/release/smoke.sh http://ACTUAL_IP FULL_40_HEX_COMMIT
 ```
 
-Xác minh từ một mạng ngoài VPS: trang chủ, `/rooms`, reload, CRUD, asset JS đúng MIME; API port 3001/3002 và candidate 8081 không truy cập được. Đối chiếu [release runbook](releases.md) và [Task 2 acceptance](../acceptance/task-2.md).
+Xác minh từ một mạng ngoài VPS: trang chủ, `/rooms`, reload, CRUD, asset JS đúng MIME; API port 3001/3002 và candidate 8081 không truy cập được. Đối chiếu [quy trình release](releases.md).
 
 ## HTTPS và upload
 
@@ -126,6 +122,6 @@ sudo systemctl reload nginx
 sudo certbot renew --dry-run
 ```
 
-`htpasswd` hỏi mật khẩu tương tác; không truyền password qua command line. Đổi SITE_URL và SITE_ORIGIN sang HTTPS, đặt `MEDIA_READ_ONLY=false` trước khi restart media. Kiểm tra `sudo -u www-data test -r /etc/rental-hub/upload.htpasswd`. Xác minh certificate chain/hostname/expiry, redirect và renewal. Upload chưa auth phải 401, sai Origin phải 403, quá 10 MiB phải 413; thử UI ảnh building/room bằng tài khoản demo.
+`htpasswd` hỏi mật khẩu tương tác; không truyền password qua command line. Đổi SITE_URL và SITE_ORIGIN sang HTTPS, đặt `MEDIA_READ_ONLY=false` trước khi restart media. Kiểm tra `sudo -u www-data test -r /etc/rental-hub/upload.htpasswd`. Xác minh certificate chain/hostname/expiry, redirect và renewal. Upload chưa auth phải 401, sai Origin phải 403, quá 10 MiB phải 413; thử UI ảnh building/room bằng tài khoản thử nghiệm.
 
-Nếu chưa có domain/HTTPS, chỉ nghiệm thu frontend HTTP. API có thể kiểm thử qua SSH tunnel loopback nhưng **không đánh dấu upload Internet đạt**. Không gửi Basic Auth qua HTTP public. Backup shared/images riêng và xuất localStorage từ trình duyệt; rollback code không khôi phục metadata browser.
+Nếu chưa có domain/HTTPS, chỉ phục vụ frontend qua HTTP. API có thể kiểm thử qua SSH tunnel loopback nhưng không bật upload public. Không gửi Basic Auth qua HTTP public. Backup shared/images riêng và xuất localStorage từ trình duyệt; rollback code không khôi phục metadata browser.

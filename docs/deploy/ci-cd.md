@@ -1,6 +1,6 @@
 ﻿# CI/CD
 
-Push hoặc pull request vào `develop`/`main` chạy ba job song song: `quality` (lint, typecheck, unit, build, audit), `operations` (release và AWS rollback fixtures), `e2e` (Playwright). Playwright cache Chromium theo `package-lock.json`; job E2E có thể rerun riêng. Push chỉ deploy khi cả ba job thành công.
+Push hoặc pull request vào `develop`/`main` chạy ba job song song: `quality` (lint, unit, build gồm typecheck, audit), `operations` (release và AWS rollback fixtures), `e2e` (Playwright). Playwright cache Chromium theo `package-lock.json`; job E2E có thể rerun riêng. Push chỉ deploy khi cả ba job thành công.
 
 Push `develop` tự deploy lên staging S3/CloudFront tại <https://dbr746toxvnoy.cloudfront.net>. Push `main` tạo deployment production ở trạng thái chờ; reviewer `TrieuNguyenPhu` phải approve trong GitHub Actions rồi job mới nhận AWS secrets và deploy lên <https://d2pqq5rtvfmo3w.cloudfront.net>. GitHub Environments chỉ cho `develop` vào staging và `main` vào production. Mỗi environment có `AWS_DEPLOYMENT_JSON` (account, region, bucket, distribution, domain, MediaFunctionName) và cặp secret AWS riêng. Job deploy chạy `ops/aws/deploy-aws.ps1`: kiểm tra account, bucket, distribution; build lại frontend và Lambda trên Linux, lưu gói Lambda cũ trước khi cập nhật, kiểm tra API trước khi chuyển index, upload assets trước index, đợi invalidation và smoke; nếu lỗi sau khi cập nhật, phục hồi index S3 và mã Lambda cũ.
 
