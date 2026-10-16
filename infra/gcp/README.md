@@ -26,7 +26,7 @@ Kiểm tra project, state và plan trước khi apply. Nếu state thiếu nhưn
 powershell -ExecutionPolicy Bypass -File ops/gcp/deploy.ps1
 ```
 
-Script chạy `npm ci`, build frontend tại `.local/build/web/`, upload qua IAP, chuyển release Nginx, smoke test public HTTP và rollback nếu smoke thất bại. IP public là ephemeral, có thể đổi khi dừng VM.
+Script yêu cầu working tree Git sạch, chạy `npm ci`, build frontend tại `.local/build/web/`, ghi commit Git và release ID vào `/release.json`, upload qua IAP, chuyển release Nginx, smoke test public HTTP và rollback nếu smoke thất bại. IP public là ephemeral, có thể đổi khi dừng VM.
 
 Chỉ cổng HTTP 80 mở Internet; SSH 22 chỉ nhận dải IAP và OS Login được bật. Website chưa có domain/HTTPS, đăng nhập hoặc lưu dữ liệu chung. Upload ảnh bị tắt; CRUD lưu trong từng trình duyệt. Không nhập dữ liệu khách hàng thật hoặc credential qua HTTP.
 

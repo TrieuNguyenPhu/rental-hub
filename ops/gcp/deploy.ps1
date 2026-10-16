@@ -5,6 +5,11 @@ $vm = 'rental-hub-vm'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 Set-Location $root
 
+$changes = & git status --porcelain
+if ($LASTEXITCODE -ne 0 -or $changes) { throw 'Commit all source changes before deploying to GCP.' }
+$commit = (& git rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $commit -notmatch '^[a-f0-9]{40}$') { throw 'Could not identify the Git commit.' }
+
 $releaseId = [DateTime]::UtcNow.ToString('yyyyMMddHHmmssfff')
 $archive = Join-Path $root ".local/rental-hub-$releaseId.tar.gz"
 $remoteArchive = "${vm}:/tmp/rental-hub-$releaseId.tar.gz"
@@ -18,7 +23,7 @@ try {
 
     $web = Join-Path $root '.local/build/web'
     if (-not (Test-Path (Join-Path $web 'index.html'))) { throw 'Vite output is missing' }
-    [System.IO.File]::WriteAllText((Join-Path $web 'release.json'), "{`"releaseId`":`"$releaseId`"}`n")
+    [System.IO.File]::WriteAllText((Join-Path $web 'release.json'), "{`"releaseId`":`"$releaseId`",`"commit`":`"$commit`"}`n")
     tar -czf $archive -C $web .
     if ($LASTEXITCODE -ne 0) { throw 'Archive creation failed' }
 
@@ -35,7 +40,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Remote activation failed' }
 
     try {
-        node (Join-Path $PSScriptRoot 'smoke.mjs') "http://$ip" $releaseId
+        node (Join-Path $PSScriptRoot 'smoke.mjs') "http://$ip" $releaseId $commit
         if ($LASTEXITCODE -ne 0) { throw 'Public HTTP smoke test failed' }
     } catch {
         gcloud compute ssh $vm --project=$project --zone=$zone --tunnel-through-iap --quiet --command='sudo bash /tmp/rental-hub-release.sh rollback'

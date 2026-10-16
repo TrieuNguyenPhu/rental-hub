@@ -25,6 +25,17 @@
 
 Bản AWS dùng CloudFront + S3 cho frontend/ảnh; `/api/*` tới API Gateway và Lambda. Lambda lưu metadata trong S3 data bucket riêng, có versioning và conditional writes. API chưa có xác thực, vì vậy chỉ dùng dữ liệu giả. Local dùng localStorage và media API; GCP dùng localStorage và tắt upload trên HTTP. Cấu hình VPS hiện là runbook, chưa có môi trường đang vận hành. Xem [AWS](deploy/aws.md), [GCP](../infra/gcp/README.md) và [VPS](deploy/vps.md).
 
+## Git và phiên bản đang chạy
+
+| Môi trường | Nguồn deploy | Cách đối chiếu phiên bản |
+| --- | --- | --- |
+| AWS staging | Push `develop` sau CI | Thẻ `release-sha` trong HTML trang chủ. |
+| AWS production | Push `main` sau CI và GitHub Environment approval | Thẻ `release-sha` trong HTML trang chủ. |
+| GCP | Chạy `ops/gcp/deploy.ps1` từ working tree sạch | `/release.json` có `releaseId`; bản deploy bằng script mới có thêm `commit`. |
+| VPS | Chạy `ops/release/deploy.sh` với full Git SHA | `/release.json` và `/api/health`; hiện chưa có VPS đang chạy. |
+
+AWS và GCP có cùng source frontend nhưng khác cấu hình build và nơi lưu dữ liệu, nên hash của file JS không cần giống nhau. Muốn xác nhận cùng phiên bản, so commit Git trên từng môi trường; không so asset hash hoặc dữ liệu người dùng.
+
 ## Terraform state
 
 AWS production và staging dùng state cục bộ riêng; đọc [hướng dẫn AWS](deploy/aws.md) trước khi chạy Terraform trên máy khác. GCP dùng bucket GCS riêng tư có versioning cho state tại prefix `gcp/production`. Không đưa state, plan hoặc credential vào Git.

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 
-const [base, releaseId] = process.argv.slice(2)
+const [base, releaseId, commit] = process.argv.slice(2)
 assert.match(releaseId ?? '', /^[0-9]{17}$/)
+assert.match(commit ?? '', /^[a-f0-9]{40}$/)
 assert.equal(new URL(base).origin, base)
 
 async function get(path, status = 200) {
@@ -14,7 +15,9 @@ async function get(path, status = 200) {
   return response
 }
 
-assert.equal((await (await get('/release.json')).json()).releaseId, releaseId)
+const release = await (await get('/release.json')).json()
+assert.equal(release.releaseId, releaseId)
+assert.equal(release.commit, commit)
 const index = await (await get('/')).text()
 assert.match(index, /id="root"/)
 for (const path of ['/buildings', '/rooms', '/bookings']) {

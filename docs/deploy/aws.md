@@ -29,11 +29,11 @@ terraform '-chdir=infra/aws' apply changes.tfplan
 CI ở [.github/workflows/ci.yml](../../.github/workflows/ci.yml) deploy staging sau khi push `develop`; production sau khi push `main` và được duyệt trong GitHub Environment. Xem [CI/CD](ci-cd.md). Deploy thủ công trên Linux x86_64 cần Node.js 24, npm, PowerShell Core, AWS CLI và quyền đúng account:
 
 ```powershell
-pwsh ./ops/aws/deploy-aws.ps1 -WhatIf
-pwsh ./ops/aws/deploy-aws.ps1 -Confirm:$false
+pwsh ./ops/aws/deploy-main.ps1 -WhatIf
+pwsh ./ops/aws/deploy-main.ps1 -Confirm:$false
 ```
 
-Script kiểm tra account, bucket và CloudFront origin; chạy lint/test/build, cập nhật Lambda, kiểm tra API, upload asset trước `index.html`, chờ invalidation và smoke test. Không dùng `sync --delete`. `-WhatIf` vẫn chạy kiểm tra và đọc cấu hình AWS nhưng không upload.
+Wrapper yêu cầu local `main` sạch, bằng `origin/main`, CI push đã thành công và đúng account AWS. Script deploy kiểm tra bucket và CloudFront origin; chạy lint/test/build, cập nhật Lambda, kiểm tra API, upload asset trước `index.html`, chờ invalidation và smoke test. Không dùng `sync --delete`. `-WhatIf` chỉ kiểm tra điều kiện của wrapper, không upload.
 
 Để rollback frontend, chọn VersionId tốt của `index.html` trong website bucket rồi chạy:
 
