@@ -24,6 +24,8 @@ export interface EstateActions {
 }
 
 const failure = (error: string): ActionResult => ({ ok: false, error })
+const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
+  byte.toString(16).padStart(2, '0')).join('')
 
 export function createEstateActions(
   get: () => EstateData,
@@ -49,7 +51,7 @@ export function createEstateActions(
       if (!validImages(input.images ?? [])) return failure('Ảnh không hợp lệ.')
       const error = validateBuilding(input, get())
       if (error) return failure(error)
-      const id = crypto.randomUUID()
+      const id = newId()
       return commit(
         {
           buildings: [
@@ -102,7 +104,7 @@ export function createEstateActions(
       if (!validImages(input.images ?? [])) return failure('Ảnh không hợp lệ.')
       const error = validateRoom(input, get())
       if (error) return failure(error)
-      const id = crypto.randomUUID()
+      const id = newId()
       return commit(
         {
           rooms: [
@@ -145,7 +147,7 @@ export function createEstateActions(
     addBooking: (input) => {
       const error = validateBooking(input, get())
       if (error) return failure(error)
-      const id = crypto.randomUUID()
+      const id = newId()
       return commit(
         {
           bookings: [

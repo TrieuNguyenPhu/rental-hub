@@ -1,4 +1,4 @@
-# Adopt the resources already deployed for Task 3; these blocks do not recreate them.
+# Adopt existing AWS production resources; these blocks do not recreate them.
 import {
   for_each = local.buckets
   to       = module.storage.aws_s3_bucket.buckets[each.key]
